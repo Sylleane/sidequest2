@@ -12,7 +12,7 @@ echo.
 
 REM Recuperer le repertoire du script
 set "SCRIPT_DIR=%~dp0"
-cd /d "%SCRIPT_DIR%kitty-chat-cpp"
+cd /d "%SCRIPT_DIR%"
 
 REM Recherche de CMake - d'abord dans le PATH, puis dans Visual Studio
 set "CMAKE_CMD=cmake"
