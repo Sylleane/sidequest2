@@ -28,7 +28,8 @@
 using json = nlohmann::json;
 
 // URL par défaut du serveur Matrix
-static const std::string DEFAULT_HOMESERVER = "https://matrix.buffertavern.com";
+// Utilisation du tunnel SSH : localhost:8008 -> serveur Matrix
+static const std::string DEFAULT_HOMESERVER = "http://localhost:8008";
 
 /**
  * @brief Constructeur - Initialise le client avec les valeurs par défaut
@@ -70,7 +71,7 @@ bool MatrixClient::Login(const std::string& username, const std::string& passwor
     // Si le nom d'utilisateur ne commence pas par @, on le complète
     if (user[0] != '@')
     {
-        // Extraction du domaine depuis l'URL du serveur
+        // Le domaine Matrix est buffertavern.com (même si on utilise localhost pour le tunnel)
         std::string domain = "buffertavern.com";
         user = "@" + user + ":" + domain;
     }
@@ -444,13 +445,53 @@ void MatrixClient::ProcessSyncResponse(const std::string& syncResponse)
 /**
  * @brief Effectue une requête HTTP vers l'API Matrix
  * 
- * Utilise WinHTTP pour les connexions HTTPS sécurisées
+ * Utilise WinHTTP pour les connexions HTTP/HTTPS
+ * Supporte les URLs http:// et https://
  */
 bool MatrixClient::HttpRequest(const std::string& method, const std::string& endpoint,
                                const std::string& body, std::string& response)
 {
-    // Extraction du host depuis l'URL du serveur
-    std::wstring host = L"matrix.buffertavern.com";
+    // Analyse de l'URL du serveur pour extraire host, port et protocole
+    std::string url = m_homeserver;
+    bool useHttps = true;
+    std::string host = "localhost";
+    int port = 443;
+    
+    // Détection du protocole
+    if (url.find("http://") == 0)
+    {
+        useHttps = false;
+        url = url.substr(7);  // Enlever "http://"
+        port = 80;
+    }
+    else if (url.find("https://") == 0)
+    {
+        useHttps = true;
+        url = url.substr(8);  // Enlever "https://"
+        port = 443;
+    }
+    
+    // Extraction du host et du port
+    size_t colonPos = url.find(':');
+    size_t slashPos = url.find('/');
+    
+    if (colonPos != std::string::npos && (slashPos == std::string::npos || colonPos < slashPos))
+    {
+        host = url.substr(0, colonPos);
+        size_t portEnd = (slashPos != std::string::npos) ? slashPos : url.length();
+        port = std::stoi(url.substr(colonPos + 1, portEnd - colonPos - 1));
+    }
+    else if (slashPos != std::string::npos)
+    {
+        host = url.substr(0, slashPos);
+    }
+    else
+    {
+        host = url;
+    }
+    
+    // Conversion en wide string pour WinHTTP
+    std::wstring wHost(host.begin(), host.end());
     
     // Ouverture d'une session WinHTTP
     HINTERNET hSession = WinHttpOpen(
@@ -467,11 +508,11 @@ bool MatrixClient::HttpRequest(const std::string& method, const std::string& end
         return false;
     }
 
-    // Connexion au serveur
+    // Connexion au serveur avec le port approprié
     HINTERNET hConnect = WinHttpConnect(
         hSession,
-        host.c_str(),
-        INTERNET_DEFAULT_HTTPS_PORT,
+        wHost.c_str(),
+        static_cast<INTERNET_PORT>(port),
         0
     );
 
@@ -486,7 +527,8 @@ bool MatrixClient::HttpRequest(const std::string& method, const std::string& end
     std::wstring wEndpoint(endpoint.begin(), endpoint.end());
     std::wstring wMethod(method.begin(), method.end());
 
-    // Création de la requête
+    // Création de la requête (avec ou sans HTTPS)
+    DWORD flags = useHttps ? WINHTTP_FLAG_SECURE : 0;
     HINTERNET hRequest = WinHttpOpenRequest(
         hConnect,
         wMethod.c_str(),
@@ -494,7 +536,7 @@ bool MatrixClient::HttpRequest(const std::string& method, const std::string& end
         nullptr,
         WINHTTP_NO_REFERER,
         WINHTTP_DEFAULT_ACCEPT_TYPES,
-        WINHTTP_FLAG_SECURE
+        flags
     );
 
     if (!hRequest)
@@ -613,9 +655,9 @@ std::string MatrixClient::GenerateTransactionId()
 std::string MatrixClient::GetConnectionStatus() const
 {
     if (!m_isLoggedIn)
-        return "Déconnecté";
+        return "Endormi zzZ";
     if (m_isSyncing)
-        return "Connecté - Synchronisation active";
-    return "Connecté";
+        return "Eveille et curieux ~(=^.^)";
+    return "Ronronne doucement";
 }
 

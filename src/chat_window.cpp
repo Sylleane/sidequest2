@@ -87,11 +87,23 @@ void ChatWindow::RenderLoginScreen()
     // Conteneur du formulaire
     ImGui::BeginChild("LoginForm", ImVec2(formWidth, formHeight), true);
 
-    // Titre avec émoji chat
-    ImGui::PushFont(nullptr);  // Utilisation de la police par défaut
-    float titleWidth = ImGui::CalcTextSize("Kitty Chat").x;
+    // Titre avec émoji chat et art ASCII
+    ImGui::PushFont(nullptr);
+    
+    // Art ASCII d'un chat mignon
+    const char* catArt = 
+        "  /\\_/\\  \n"
+        " ( o.o ) \n"
+        "  > ^ <  ";
+    float catWidth = ImGui::CalcTextSize("  /\\_/\\  ").x;
+    ImGui::SetCursorPosX((formWidth - catWidth) * 0.5f - 10);
+    ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f), "%s", catArt);
+    
+    ImGui::Spacing();
+    
+    float titleWidth = ImGui::CalcTextSize("~ Kitty Chat ~").x;
     ImGui::SetCursorPosX((formWidth - titleWidth) * 0.5f - 10);
-    ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "Kitty Chat");
+    ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "~ Kitty Chat ~");
     ImGui::PopFont();
 
     ImGui::Spacing();
@@ -142,14 +154,14 @@ void ChatWindow::RenderLoginScreen()
     }
 
     // Bouton de connexion centré
-    float buttonWidth = 150.0f;
+    float buttonWidth = 180.0f;
     ImGui::SetCursorPosX((formWidth - buttonWidth) * 0.5f - 10);
     
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.35f, 0.15f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.45f, 0.2f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.5f, 0.25f, 1.0f));
     
-    if (ImGui::Button("Se connecter", ImVec2(buttonWidth, 35)))
+    if (ImGui::Button("Entrer dans la chatiere", ImVec2(buttonWidth, 35)))
     {
         // Tentative de connexion
         if (m_client->Login(m_username, m_password))
@@ -217,8 +229,12 @@ void ChatWindow::RenderTitleBar()
 {
     ImGui::BeginChild("TitleBar", ImVec2(0, 40), true);
 
-    // Logo/Titre
+    // Logo/Titre avec pattes de chat
+    ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f), "=^.^=");
+    ImGui::SameLine();
     ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "Kitty Chat");
+    ImGui::SameLine();
+    ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f), "=^.^=");
     
     ImGui::SameLine();
     ImGui::TextDisabled("|");
@@ -239,7 +255,7 @@ void ChatWindow::RenderTitleBar()
     
     // Bouton de déconnexion
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.2f, 0.2f, 1.0f));
-    if (ImGui::Button("Deconnexion", ImVec2(buttonWidth, 0)))
+    if (ImGui::Button("Faire dodo", ImVec2(buttonWidth, 0)))
     {
         m_client->Logout();
     }
@@ -255,6 +271,9 @@ void ChatWindow::RenderTitleBar()
  */
 void ChatWindow::RenderSidebar()
 {
+    // En-tête avec patte de chat
+    ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f), " ~(=^..^)");
+    ImGui::SameLine();
     ImGui::Text("Salons");
     ImGui::Separator();
     ImGui::Spacing();
@@ -264,8 +283,8 @@ void ChatWindow::RenderSidebar()
 
     if (rooms.empty())
     {
-        ImGui::TextDisabled("Chargement des salons...");
-        ImGui::TextDisabled("Veuillez patienter.");
+        ImGui::TextDisabled("Le chat cherche des salons...");
+        ImGui::TextDisabled("*ronron* Patientez...");
     }
     else
     {
@@ -319,17 +338,34 @@ void ChatWindow::RenderMessageArea()
 
     if (!room)
     {
-        // Aucun salon sélectionné - afficher un message d'accueil
+        // Aucun salon sélectionné - afficher un message d'accueil avec chat
         ImVec2 windowSize = ImGui::GetWindowSize();
-        float textHeight = 100.0f;
+        float textHeight = 180.0f;
         ImGui::SetCursorPosY((windowSize.y - textHeight) * 0.5f);
 
-        const char* welcomeText = "Bienvenue sur Kitty Chat !";
+        // Grand chat ASCII au centre
+        const char* bigCat = 
+            "      /\\_____/\\      \n"
+            "     /  o   o  \\     \n"
+            "    ( ==  ^  == )    \n"
+            "     )         (     \n"
+            "    (           )    \n"
+            "   ( (  )   (  ) )   \n"
+            "  (__(__)___(__)__)  ";
+        
+        float catWidth = ImGui::CalcTextSize("      /\\_____/\\      ").x;
+        ImGui::SetCursorPosX((windowSize.x - catWidth) * 0.5f);
+        ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f), "%s", bigCat);
+        
+        ImGui::Spacing();
+        ImGui::Spacing();
+
+        const char* welcomeText = "Miaou ! Bienvenue sur Kitty Chat !";
         float textWidth = ImGui::CalcTextSize(welcomeText).x;
         ImGui::SetCursorPosX((windowSize.x - textWidth) * 0.5f);
         ImGui::TextColored(ImVec4(1.0f, 0.6f, 0.2f, 1.0f), "%s", welcomeText);
 
-        const char* helpText = "Selectionnez un salon dans la liste pour commencer";
+        const char* helpText = "Selectionnez un salon pour commencer a ronronner...";
         textWidth = ImGui::CalcTextSize(helpText).x;
         ImGui::SetCursorPosX((windowSize.x - textWidth) * 0.5f);
         ImGui::TextDisabled("%s", helpText);
@@ -427,7 +463,7 @@ void ChatWindow::RenderInputArea()
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.45f, 0.2f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.5f, 0.25f, 1.0f));
     
-    if (ImGui::Button("Envoyer", ImVec2(100, 0)) || sendMessage)
+    if (ImGui::Button("Miaou!", ImVec2(100, 0)) || sendMessage)
     {
         if (strlen(m_messageInput) > 0)
         {
