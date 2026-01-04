@@ -28,8 +28,8 @@
 using json = nlohmann::json;
 
 // URL par défaut du serveur Matrix
-// Utilisation du tunnel SSH : localhost:8008 -> serveur Matrix
-static const std::string DEFAULT_HOMESERVER = "http://localhost:8008";
+// Serveur local accessible via nginx sur le réseau
+static const std::string DEFAULT_HOMESERVER = "http://192.168.1.17";
 
 /**
  * @brief Constructeur - Initialise le client avec les valeurs par défaut
