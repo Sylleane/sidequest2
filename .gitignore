@@ -1,0 +1,26 @@
+# Dossier de build
+build/
+
+# Fichiers Visual Studio
+*.vcxproj.user
+*.suo
+*.user
+.vs/
+
+# Fichiers CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# Exécutables et bibliothèques
+*.exe
+*.dll
+*.lib
+*.obj
+*.pdb
+
+# Fichiers temporaires
+*.tmp
+*.log
+*.bak
+
