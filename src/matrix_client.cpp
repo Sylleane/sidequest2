@@ -28,8 +28,8 @@
 using json = nlohmann::json;
 
 // URL par défaut du serveur Matrix
-// Serveur local accessible via nginx sur le réseau
-static const std::string DEFAULT_HOMESERVER = "http://192.168.1.17";
+// Serveur accessible via Cloudflare Tunnel
+static const std::string DEFAULT_HOMESERVER = "https://matrix.buffertavern.com";
 
 /**
  * @brief Constructeur - Initialise le client avec les valeurs par défaut
@@ -71,8 +71,8 @@ bool MatrixClient::Login(const std::string& username, const std::string& passwor
     // Si le nom d'utilisateur ne commence pas par @, on le complète
     if (user[0] != '@')
     {
-        // Le domaine Matrix est buffertavern.com (même si on utilise localhost pour le tunnel)
-        std::string domain = "buffertavern.com";
+        // Le domaine Matrix du serveur (visible dans les user IDs)
+        std::string domain = "vault.buffertavern.com";
         user = "@" + user + ":" + domain;
     }
 
@@ -117,6 +117,105 @@ bool MatrixClient::Login(const std::string& username, const std::string& passwor
         if (m_accessToken.empty())
         {
             m_lastError = "Token d'accès non reçu";
+            return false;
+        }
+
+        m_isLoggedIn = true;
+        m_lastError.clear();
+
+        // Démarrage de la synchronisation
+        StartSync();
+
+        return true;
+    }
+    catch (const json::exception& e)
+    {
+        m_lastError = std::string("Erreur de parsing JSON: ") + e.what();
+        return false;
+    }
+}
+
+/**
+ * @brief Crée un nouveau compte sur le serveur Matrix
+ * 
+ * Cette méthode utilise l'API /_matrix/client/v3/register pour créer un compte.
+ * Note: L'inscription peut nécessiter des étapes supplémentaires (captcha, email)
+ * selon la configuration du serveur.
+ */
+bool MatrixClient::Register(const std::string& username, const std::string& password)
+{
+    if (username.empty() || password.empty())
+    {
+        m_lastError = "Nom d'utilisateur ou mot de passe vide";
+        return false;
+    }
+
+    // Première tentative : on essaie sans auth
+    json registerRequest = {
+        {"username", username},
+        {"password", password},
+        {"initial_device_display_name", "Kitty Chat C++"},
+        {"auth", {
+            {"type", "m.login.dummy"}
+        }}
+    };
+
+    std::string response;
+    bool success = HttpRequest("POST", "/_matrix/client/v3/register", 
+                               registerRequest.dump(), response);
+
+    try
+    {
+        json registerResponse = json::parse(response);
+
+        // Vérification si le serveur demande une authentification interactive
+        if (registerResponse.contains("flows"))
+        {
+            // Le serveur exige une authentification interactive
+            // On essaie avec le type "dummy" qui est souvent accepté
+            std::string session = registerResponse.value("session", "");
+            
+            json authRequest = {
+                {"username", username},
+                {"password", password},
+                {"initial_device_display_name", "Kitty Chat C++"},
+                {"auth", {
+                    {"type", "m.login.dummy"},
+                    {"session", session}
+                }}
+            };
+
+            success = HttpRequest("POST", "/_matrix/client/v3/register", 
+                                 authRequest.dump(), response);
+            registerResponse = json::parse(response);
+        }
+
+        if (registerResponse.contains("errcode"))
+        {
+            std::string errcode = registerResponse.value("errcode", "");
+            if (errcode == "M_USER_IN_USE")
+            {
+                m_lastError = "Ce nom d'utilisateur est deja pris, miaou!";
+            }
+            else if (errcode == "M_FORBIDDEN")
+            {
+                m_lastError = "L'inscription est desactivee sur ce serveur";
+            }
+            else
+            {
+                m_lastError = registerResponse.value("error", "Erreur d'inscription");
+            }
+            return false;
+        }
+
+        // Inscription réussie - extraire les informations de connexion
+        m_accessToken = registerResponse.value("access_token", "");
+        m_userId = registerResponse.value("user_id", "");
+        m_deviceId = registerResponse.value("device_id", "");
+
+        if (m_accessToken.empty())
+        {
+            m_lastError = "Token d'acces non recu apres inscription";
             return false;
         }
 
@@ -240,6 +339,121 @@ bool MatrixClient::SendMessage(const std::string& message)
     }
     catch (...)
     {
+        return false;
+    }
+}
+
+/**
+ * @brief Crée un nouveau salon
+ */
+bool MatrixClient::CreateRoom(const std::string& name)
+{
+    if (!m_isLoggedIn || name.empty())
+    {
+        m_lastError = "Non connecte ou nom de salon vide";
+        return false;
+    }
+
+    json createRequest = {
+        {"name", name},
+        {"preset", "public_chat"},
+        {"visibility", "public"}
+    };
+
+    std::string response;
+    bool success = HttpRequest("POST", "/_matrix/client/v3/createRoom", 
+                               createRequest.dump(), response);
+
+    if (!success)
+    {
+        m_lastError = "Erreur lors de la creation du salon";
+        return false;
+    }
+
+    try
+    {
+        json createResponse = json::parse(response);
+        if (createResponse.contains("errcode"))
+        {
+            m_lastError = createResponse.value("error", "Erreur de creation");
+            return false;
+        }
+        
+        // Le salon sera ajouté via la synchronisation
+        return true;
+    }
+    catch (...)
+    {
+        m_lastError = "Erreur de parsing de la reponse";
+        return false;
+    }
+}
+
+/**
+ * @brief Rejoint un salon existant
+ */
+bool MatrixClient::JoinRoom(const std::string& roomIdOrAlias)
+{
+    if (!m_isLoggedIn || roomIdOrAlias.empty())
+    {
+        m_lastError = "Non connecte ou ID de salon vide";
+        return false;
+    }
+
+    // Encodage de l'ID/alias pour l'URL
+    std::string encodedRoom = roomIdOrAlias;
+    // Remplacer # par %23 et : par %3A pour l'URL
+    size_t pos = 0;
+    while ((pos = encodedRoom.find('#', pos)) != std::string::npos)
+    {
+        encodedRoom.replace(pos, 1, "%23");
+        pos += 3;
+    }
+    pos = 0;
+    while ((pos = encodedRoom.find(':', pos)) != std::string::npos)
+    {
+        encodedRoom.replace(pos, 1, "%3A");
+        pos += 3;
+    }
+
+    std::string endpoint = "/_matrix/client/v3/join/" + encodedRoom;
+
+    std::string response;
+    bool success = HttpRequest("POST", endpoint, "{}", response);
+
+    if (!success)
+    {
+        m_lastError = "Erreur lors de la tentative de rejoindre le salon";
+        return false;
+    }
+
+    try
+    {
+        json joinResponse = json::parse(response);
+        if (joinResponse.contains("errcode"))
+        {
+            std::string errcode = joinResponse.value("errcode", "");
+            if (errcode == "M_NOT_FOUND")
+            {
+                m_lastError = "Salon introuvable";
+            }
+            else if (errcode == "M_FORBIDDEN")
+            {
+                m_lastError = "Acces refuse a ce salon";
+            }
+            else
+            {
+                m_lastError = joinResponse.value("error", "Erreur pour rejoindre");
+            }
+            return false;
+        }
+        
+        // Le salon sera ajouté via la synchronisation
+        return true;
+    }
+    catch (...)
+    {
+        m_lastError = "Erreur de parsing de la reponse";
         return false;
     }
 }

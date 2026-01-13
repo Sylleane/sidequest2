@@ -86,6 +86,14 @@ public:
     bool Login(const std::string& username, const std::string& password);
     
     /**
+     * @brief Crée un nouveau compte sur le serveur Matrix
+     * @param username Nom d'utilisateur souhaité
+     * @param password Mot de passe
+     * @return true si l'inscription a réussi
+     */
+    bool Register(const std::string& username, const std::string& password);
+    
+    /**
      * @brief Déconnecte l'utilisateur actuel
      */
     void Logout();
@@ -130,6 +138,20 @@ public:
      * @return true si l'envoi a réussi
      */
     bool SendMessage(const std::string& message);
+    
+    /**
+     * @brief Crée un nouveau salon
+     * @param name Nom du salon
+     * @return true si la création a réussi
+     */
+    bool CreateRoom(const std::string& name);
+    
+    /**
+     * @brief Rejoint un salon existant par son ID ou alias
+     * @param roomIdOrAlias ID ou alias du salon (ex: #general:server ou !xxx:server)
+     * @return true si le join a réussi
+     */
+    bool JoinRoom(const std::string& roomIdOrAlias);
 
     // === Méthodes de synchronisation ===
     

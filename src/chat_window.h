@@ -54,11 +54,19 @@ private:
     char m_password[256];       // Buffer pour le mot de passe
     bool m_showPassword;        // Afficher/masquer le mot de passe
     bool m_loginError;          // Indicateur d'erreur de connexion
+    bool m_isRegistering;       // Mode inscription (true) ou connexion (false)
     std::string m_errorMessage; // Message d'erreur à afficher
+    std::string m_successMessage; // Message de succès
     
     // État de la zone de chat
     char m_messageInput[4096];  // Buffer pour le message à envoyer
     bool m_scrollToBottom;      // Défiler vers le bas automatiquement
+    
+    // État pour créer/rejoindre des salons
+    char m_newRoomName[256];    // Nom du nouveau salon
+    char m_joinRoomId[256];     // ID du salon à rejoindre
+    bool m_showCreateRoom;      // Afficher le popup de création
+    bool m_showJoinRoom;        // Afficher le popup de join
     
     // Méthodes de rendu privées
     
@@ -100,4 +108,5 @@ private:
 };
 
 #endif // CHAT_WINDOW_H
+
 

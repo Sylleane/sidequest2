@@ -27,12 +27,17 @@ ChatWindow::ChatWindow(MatrixClient* client)
     : m_client(client)
     , m_showPassword(false)
     , m_loginError(false)
+    , m_isRegistering(false)
     , m_scrollToBottom(true)
+    , m_showCreateRoom(false)
+    , m_showJoinRoom(false)
 {
     // Initialisation des buffers à zéro
     memset(m_username, 0, sizeof(m_username));
     memset(m_password, 0, sizeof(m_password));
     memset(m_messageInput, 0, sizeof(m_messageInput));
+    memset(m_newRoomName, 0, sizeof(m_newRoomName));
+    memset(m_joinRoomId, 0, sizeof(m_joinRoomId));
 }
 
 /**
@@ -153,21 +158,22 @@ void ChatWindow::RenderLoginScreen()
         ImGui::Spacing();
     }
 
-    // Bouton de connexion centré
-    float buttonWidth = 180.0f;
-    ImGui::SetCursorPosX((formWidth - buttonWidth) * 0.5f - 10);
+    // Boutons de connexion/inscription côte à côte
+    float totalButtonWidth = 360.0f;
+    float singleButtonWidth = 175.0f;
+    ImGui::SetCursorPosX((formWidth - totalButtonWidth) * 0.5f - 10);
     
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.35f, 0.15f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.7f, 0.45f, 0.2f, 1.0f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.8f, 0.5f, 0.25f, 1.0f));
     
-    if (ImGui::Button("Entrer dans la chatiere", ImVec2(buttonWidth, 35)))
+    // Bouton Connexion
+    if (ImGui::Button("Miaou! (Connexion)", ImVec2(singleButtonWidth, 35)))
     {
-        // Tentative de connexion
+        m_loginError = false;
+        m_successMessage.clear();
         if (m_client->Login(m_username, m_password))
         {
-            m_loginError = false;
-            // Effacer le mot de passe après connexion réussie
             memset(m_password, 0, sizeof(m_password));
         }
         else
@@ -177,13 +183,46 @@ void ChatWindow::RenderLoginScreen()
         }
     }
     
-    ImGui::PopStyleColor(3);
+    ImGui::SameLine();
+    
+    // Bouton Inscription
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.5f, 0.35f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.45f, 0.6f, 0.45f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3f, 0.45f, 0.3f, 1.0f));
+    
+    if (ImGui::Button("Nouveau chaton?", ImVec2(singleButtonWidth, 35)))
+    {
+        m_loginError = false;
+        m_successMessage.clear();
+        if (m_client->Register(m_username, m_password))
+        {
+            memset(m_password, 0, sizeof(m_password));
+            m_successMessage = "Bienvenue petit chaton!";
+        }
+        else
+        {
+            m_loginError = true;
+            m_errorMessage = m_client->GetLastError();
+        }
+    }
+    
+    ImGui::PopStyleColor(6);
 
     ImGui::Spacing();
     ImGui::Spacing();
+
+    // Message de succès
+    if (!m_successMessage.empty())
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.8f, 0.4f, 1.0f));
+        float successWidth = ImGui::CalcTextSize(m_successMessage.c_str()).x;
+        ImGui::SetCursorPosX((formWidth - successWidth) * 0.5f - 10);
+        ImGui::Text("%s", m_successMessage.c_str());
+        ImGui::PopStyleColor();
+    }
 
     // Information sur le serveur
-    ImGui::TextDisabled("Serveur: buffertavern.com");
+    ImGui::TextDisabled("Serveur: vault.buffertavern.com");
 
     ImGui::EndChild();
 }
@@ -278,13 +317,39 @@ void ChatWindow::RenderSidebar()
     ImGui::Separator();
     ImGui::Spacing();
 
+    // Boutons pour créer/rejoindre un salon
+    float buttonWidth = (ImGui::GetContentRegionAvail().x - 5) / 2;
+    
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.5f, 0.35f, 1.0f));
+    if (ImGui::Button("+ Creer", ImVec2(buttonWidth, 25)))
+    {
+        m_showCreateRoom = true;
+        memset(m_newRoomName, 0, sizeof(m_newRoomName));
+    }
+    ImGui::PopStyleColor();
+    
+    ImGui::SameLine();
+    
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.35f, 0.35f, 0.5f, 1.0f));
+    if (ImGui::Button("Rejoindre", ImVec2(buttonWidth, 25)))
+    {
+        m_showJoinRoom = true;
+        memset(m_joinRoomId, 0, sizeof(m_joinRoomId));
+    }
+    ImGui::PopStyleColor();
+    
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
     const auto& rooms = m_client->GetRooms();
     const Room* selectedRoom = m_client->GetSelectedRoom();
 
     if (rooms.empty())
     {
-        ImGui::TextDisabled("Le chat cherche des salons...");
-        ImGui::TextDisabled("*ronron* Patientez...");
+        ImGui::TextDisabled("Aucun salon...");
+        ImGui::Spacing();
+        ImGui::TextWrapped("Creez un salon ou rejoignez-en un avec les boutons ci-dessus!");
     }
     else
     {
@@ -327,6 +392,83 @@ void ChatWindow::RenderSidebar()
     
     // Nombre de salons
     ImGui::TextDisabled("%d salon(s)", static_cast<int>(rooms.size()));
+    
+    // Popup pour créer un salon
+    if (m_showCreateRoom)
+    {
+        ImGui::OpenPopup("Creer un salon");
+    }
+    
+    if (ImGui::BeginPopupModal("Creer un salon", &m_showCreateRoom, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("Nom du nouveau salon:");
+        ImGui::SetNextItemWidth(200);
+        ImGui::InputText("##newroom", m_newRoomName, sizeof(m_newRoomName));
+        
+        ImGui::Spacing();
+        
+        if (ImGui::Button("Creer", ImVec2(95, 0)))
+        {
+            if (strlen(m_newRoomName) > 0)
+            {
+                if (m_client->CreateRoom(m_newRoomName))
+                {
+                    m_showCreateRoom = false;
+                }
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Annuler", ImVec2(95, 0)))
+        {
+            m_showCreateRoom = false;
+        }
+        
+        if (!m_client->GetLastError().empty())
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", m_client->GetLastError().c_str());
+        }
+        
+        ImGui::EndPopup();
+    }
+    
+    // Popup pour rejoindre un salon
+    if (m_showJoinRoom)
+    {
+        ImGui::OpenPopup("Rejoindre un salon");
+    }
+    
+    if (ImGui::BeginPopupModal("Rejoindre un salon", &m_showJoinRoom, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::Text("ID ou alias du salon:");
+        ImGui::TextDisabled("Ex: #general:vault.buffertavern.com");
+        ImGui::SetNextItemWidth(250);
+        ImGui::InputText("##joinroom", m_joinRoomId, sizeof(m_joinRoomId));
+        
+        ImGui::Spacing();
+        
+        if (ImGui::Button("Rejoindre", ImVec2(95, 0)))
+        {
+            if (strlen(m_joinRoomId) > 0)
+            {
+                if (m_client->JoinRoom(m_joinRoomId))
+                {
+                    m_showJoinRoom = false;
+                }
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Annuler", ImVec2(95, 0)))
+        {
+            m_showJoinRoom = false;
+        }
+        
+        if (!m_client->GetLastError().empty())
+        {
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", m_client->GetLastError().c_str());
+        }
+        
+        ImGui::EndPopup();
+    }
 }
 
 /**
