@@ -21,6 +21,7 @@
 
 #include "chat_window.h"
 #include "matrix_client.h"
+#include "texture_manager.h"
 
 // Déclaration du gestionnaire de messages Windows pour ImGui
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -100,46 +101,56 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;   // Navigation clavier
     io.IniFilename = nullptr;                                // Pas de fichier de configuration
 
-    // Configuration du style visuel - thème chat/mignon
+    // Configuration du style visuel - thème moderne violet/rose
     ImGuiStyle& style = ImGui::GetStyle();
-    style.WindowRounding = 8.0f;
-    style.FrameRounding = 4.0f;
-    style.GrabRounding = 4.0f;
-    style.ScrollbarRounding = 4.0f;
-    style.WindowPadding = ImVec2(12, 12);
-    style.FramePadding = ImVec2(8, 4);
-    style.ItemSpacing = ImVec2(8, 6);
+    style.WindowRounding = 15.0f;
+    style.FrameRounding = 10.0f;
+    style.GrabRounding = 8.0f;
+    style.ScrollbarRounding = 10.0f;
+    style.TabRounding = 8.0f;
+    style.ChildRounding = 12.0f;
+    style.PopupRounding = 12.0f;
+    style.WindowPadding = ImVec2(15, 15);
+    style.FramePadding = ImVec2(12, 6);
+    style.ItemSpacing = ImVec2(10, 8);
+    style.ScrollbarSize = 12.0f;
+    style.GrabMinSize = 10.0f;
 
-    // Couleurs personnalisées - palette chaude et accueillante
+    // Couleurs modernes - palette violet/rose/doré
     ImVec4* colors = style.Colors;
-    colors[ImGuiCol_WindowBg]           = ImVec4(0.15f, 0.12f, 0.10f, 1.00f);   // Fond brun foncé
-    colors[ImGuiCol_ChildBg]            = ImVec4(0.18f, 0.15f, 0.12f, 1.00f);
-    colors[ImGuiCol_PopupBg]            = ImVec4(0.20f, 0.17f, 0.14f, 0.95f);
-    colors[ImGuiCol_Border]             = ImVec4(0.45f, 0.35f, 0.25f, 0.50f);
-    colors[ImGuiCol_FrameBg]            = ImVec4(0.25f, 0.20f, 0.15f, 1.00f);
-    colors[ImGuiCol_FrameBgHovered]     = ImVec4(0.35f, 0.28f, 0.20f, 1.00f);
-    colors[ImGuiCol_FrameBgActive]      = ImVec4(0.45f, 0.35f, 0.25f, 1.00f);
-    colors[ImGuiCol_TitleBg]            = ImVec4(0.20f, 0.15f, 0.10f, 1.00f);
-    colors[ImGuiCol_TitleBgActive]      = ImVec4(0.30f, 0.22f, 0.15f, 1.00f);
-    colors[ImGuiCol_MenuBarBg]          = ImVec4(0.20f, 0.15f, 0.12f, 1.00f);
-    colors[ImGuiCol_ScrollbarBg]        = ImVec4(0.15f, 0.12f, 0.10f, 1.00f);
-    colors[ImGuiCol_ScrollbarGrab]      = ImVec4(0.40f, 0.30f, 0.20f, 1.00f);
-    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.50f, 0.38f, 0.25f, 1.00f);
-    colors[ImGuiCol_ScrollbarGrabActive]  = ImVec4(0.60f, 0.45f, 0.30f, 1.00f);
-    colors[ImGuiCol_CheckMark]          = ImVec4(1.00f, 0.60f, 0.20f, 1.00f);   // Orange vif
-    colors[ImGuiCol_SliderGrab]         = ImVec4(0.90f, 0.55f, 0.20f, 1.00f);
-    colors[ImGuiCol_SliderGrabActive]   = ImVec4(1.00f, 0.65f, 0.25f, 1.00f);
-    colors[ImGuiCol_Button]             = ImVec4(0.45f, 0.30f, 0.15f, 1.00f);
-    colors[ImGuiCol_ButtonHovered]      = ImVec4(0.55f, 0.38f, 0.20f, 1.00f);
-    colors[ImGuiCol_ButtonActive]       = ImVec4(0.65f, 0.45f, 0.25f, 1.00f);
-    colors[ImGuiCol_Header]             = ImVec4(0.40f, 0.30f, 0.20f, 1.00f);
-    colors[ImGuiCol_HeaderHovered]      = ImVec4(0.50f, 0.38f, 0.25f, 1.00f);
-    colors[ImGuiCol_HeaderActive]       = ImVec4(0.55f, 0.42f, 0.28f, 1.00f);
-    colors[ImGuiCol_Tab]                = ImVec4(0.30f, 0.22f, 0.15f, 1.00f);
-    colors[ImGuiCol_TabHovered]         = ImVec4(0.50f, 0.38f, 0.25f, 1.00f);
-    colors[ImGuiCol_TabActive]          = ImVec4(0.45f, 0.32f, 0.20f, 1.00f);
-    colors[ImGuiCol_Text]               = ImVec4(0.95f, 0.90f, 0.85f, 1.00f);   // Texte crème
-    colors[ImGuiCol_TextDisabled]       = ImVec4(0.60f, 0.55f, 0.50f, 1.00f);
+    colors[ImGuiCol_WindowBg]           = ImVec4(0.08f, 0.06f, 0.12f, 1.00f);   // Violet très foncé
+    colors[ImGuiCol_ChildBg]            = ImVec4(0.10f, 0.08f, 0.15f, 0.90f);
+    colors[ImGuiCol_PopupBg]            = ImVec4(0.12f, 0.10f, 0.18f, 0.98f);
+    colors[ImGuiCol_Border]             = ImVec4(0.50f, 0.35f, 0.55f, 0.40f);
+    colors[ImGuiCol_BorderShadow]       = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImGuiCol_FrameBg]            = ImVec4(0.15f, 0.12f, 0.22f, 1.00f);
+    colors[ImGuiCol_FrameBgHovered]     = ImVec4(0.22f, 0.18f, 0.30f, 1.00f);
+    colors[ImGuiCol_FrameBgActive]      = ImVec4(0.28f, 0.22f, 0.38f, 1.00f);
+    colors[ImGuiCol_TitleBg]            = ImVec4(0.12f, 0.10f, 0.18f, 1.00f);
+    colors[ImGuiCol_TitleBgActive]      = ImVec4(0.18f, 0.14f, 0.25f, 1.00f);
+    colors[ImGuiCol_MenuBarBg]          = ImVec4(0.12f, 0.10f, 0.18f, 1.00f);
+    colors[ImGuiCol_ScrollbarBg]        = ImVec4(0.08f, 0.06f, 0.12f, 0.60f);
+    colors[ImGuiCol_ScrollbarGrab]      = ImVec4(0.40f, 0.30f, 0.50f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.50f, 0.40f, 0.60f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabActive]  = ImVec4(0.60f, 0.50f, 0.70f, 1.00f);
+    colors[ImGuiCol_CheckMark]          = ImVec4(1.00f, 0.70f, 0.40f, 1.00f);   // Doré
+    colors[ImGuiCol_SliderGrab]         = ImVec4(0.90f, 0.60f, 0.35f, 1.00f);
+    colors[ImGuiCol_SliderGrabActive]   = ImVec4(1.00f, 0.70f, 0.45f, 1.00f);
+    colors[ImGuiCol_Button]             = ImVec4(0.45f, 0.30f, 0.50f, 1.00f);
+    colors[ImGuiCol_ButtonHovered]      = ImVec4(0.55f, 0.40f, 0.60f, 1.00f);
+    colors[ImGuiCol_ButtonActive]       = ImVec4(0.65f, 0.50f, 0.70f, 1.00f);
+    colors[ImGuiCol_Header]             = ImVec4(0.35f, 0.25f, 0.45f, 1.00f);
+    colors[ImGuiCol_HeaderHovered]      = ImVec4(0.45f, 0.35f, 0.55f, 1.00f);
+    colors[ImGuiCol_HeaderActive]       = ImVec4(0.50f, 0.40f, 0.60f, 1.00f);
+    colors[ImGuiCol_Tab]                = ImVec4(0.25f, 0.18f, 0.32f, 1.00f);
+    colors[ImGuiCol_TabHovered]         = ImVec4(0.45f, 0.35f, 0.55f, 1.00f);
+    colors[ImGuiCol_TabActive]          = ImVec4(0.38f, 0.28f, 0.48f, 1.00f);
+    colors[ImGuiCol_Text]               = ImVec4(0.95f, 0.92f, 0.98f, 1.00f);   // Blanc légèrement rose
+    colors[ImGuiCol_TextDisabled]       = ImVec4(0.55f, 0.50f, 0.60f, 1.00f);
+    colors[ImGuiCol_PlotLines]          = ImVec4(1.00f, 0.70f, 0.40f, 1.00f);
+    colors[ImGuiCol_PlotLinesHovered]   = ImVec4(1.00f, 0.80f, 0.50f, 1.00f);
+    colors[ImGuiCol_TextSelectedBg]     = ImVec4(0.50f, 0.35f, 0.60f, 0.50f);
+    colors[ImGuiCol_ModalWindowDimBg]   = ImVec4(0.05f, 0.03f, 0.08f, 0.70f);
 
     // Initialisation des backends ImGui
     ImGui_ImplWin32_Init(hwnd);
@@ -147,10 +158,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // Création des composants de l'application
     auto matrixClient = std::make_unique<MatrixClient>();
-    auto chatWindow = std::make_unique<ChatWindow>(matrixClient.get());
+    auto textureManager = std::make_unique<TextureManager>(g_pd3dDevice);
+    auto chatWindow = std::make_unique<ChatWindow>(matrixClient.get(), textureManager.get());
 
-    // Couleur de fond de la fenêtre
-    ImVec4 clearColor = ImVec4(0.10f, 0.08f, 0.06f, 1.00f);
+    // Couleur de fond de la fenêtre - violet profond
+    ImVec4 clearColor = ImVec4(0.05f, 0.03f, 0.08f, 1.00f);
 
     // Boucle principale de l'application
     bool running = true;

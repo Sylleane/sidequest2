@@ -69,11 +69,14 @@ set(SOURCES
     src/main.cpp
     src/matrix_client.cpp
     src/chat_window.cpp
+    src/texture_manager.cpp
 )
 
 set(HEADERS
     src/matrix_client.h
     src/chat_window.h
+    src/texture_manager.h
+    src/stb_image.h
 )
 
 # Création de l'exécutable Windows (pas de console)

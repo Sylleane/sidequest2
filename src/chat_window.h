@@ -13,7 +13,9 @@
 #define CHAT_WINDOW_H
 
 #include "matrix_client.h"
+#include "texture_manager.h"
 #include <string>
+#include <chrono>
 
 /**
  * @class ChatWindow
@@ -31,8 +33,9 @@ public:
     /**
      * @brief Constructeur
      * @param client Pointeur vers le client Matrix
+     * @param texManager Pointeur vers le gestionnaire de textures
      */
-    explicit ChatWindow(MatrixClient* client);
+    ChatWindow(MatrixClient* client, TextureManager* texManager);
     
     /**
      * @brief Destructeur
@@ -47,26 +50,32 @@ public:
     void Render();
 
 private:
-    MatrixClient* m_client;     // Référence vers le client Matrix
+    MatrixClient* m_client;           // Référence vers le client Matrix
+    TextureManager* m_texManager;     // Gestionnaire de textures pour les GIFs
     
     // État de l'écran de connexion
-    char m_username[256];       // Buffer pour le nom d'utilisateur
-    char m_password[256];       // Buffer pour le mot de passe
-    bool m_showPassword;        // Afficher/masquer le mot de passe
-    bool m_loginError;          // Indicateur d'erreur de connexion
-    bool m_isRegistering;       // Mode inscription (true) ou connexion (false)
-    std::string m_errorMessage; // Message d'erreur à afficher
-    std::string m_successMessage; // Message de succès
+    char m_username[256];             // Buffer pour le nom d'utilisateur
+    char m_password[256];             // Buffer pour le mot de passe
+    bool m_showPassword;              // Afficher/masquer le mot de passe
+    bool m_loginError;                // Indicateur d'erreur de connexion
+    bool m_isRegistering;             // Mode inscription (true) ou connexion (false)
+    std::string m_errorMessage;       // Message d'erreur à afficher
+    std::string m_successMessage;     // Message de succès
     
     // État de la zone de chat
-    char m_messageInput[4096];  // Buffer pour le message à envoyer
-    bool m_scrollToBottom;      // Défiler vers le bas automatiquement
+    char m_messageInput[4096];        // Buffer pour le message à envoyer
+    bool m_scrollToBottom;            // Défiler vers le bas automatiquement
     
     // État pour créer/rejoindre des salons
-    char m_newRoomName[256];    // Nom du nouveau salon
-    char m_joinRoomId[256];     // ID du salon à rejoindre
-    bool m_showCreateRoom;      // Afficher le popup de création
-    bool m_showJoinRoom;        // Afficher le popup de join
+    char m_newRoomName[256];          // Nom du nouveau salon
+    char m_joinRoomId[256];           // ID du salon à rejoindre
+    bool m_showCreateRoom;            // Afficher le popup de création
+    bool m_showJoinRoom;              // Afficher le popup de join
+    
+    // Animation et effets visuels
+    std::chrono::steady_clock::time_point m_startTime;
+    float m_animTime;                 // Temps d'animation
+    bool m_gifsLoaded;                // GIFs chargés
     
     // Méthodes de rendu privées
     
@@ -105,6 +114,24 @@ private:
      * @brief Affiche la barre de titre avec les infos du salon
      */
     void RenderTitleBar();
+    
+    /**
+     * @brief Affiche un GIF animé
+     * @param name Nom du GIF
+     * @param maxWidth Largeur max
+     * @param maxHeight Hauteur max
+     */
+    void RenderGif(const std::string& name, float maxWidth, float maxHeight);
+    
+    /**
+     * @brief Dessine un fond animé avec des étoiles/particules
+     */
+    void RenderAnimatedBackground();
+    
+    /**
+     * @brief Charge les GIFs depuis internet
+     */
+    void LoadCatGifs();
 };
 
 #endif // CHAT_WINDOW_H
