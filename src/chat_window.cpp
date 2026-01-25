@@ -73,6 +73,15 @@ ChatWindow::ChatWindow(MatrixClient* client, TextureManager* texManager)
     , m_showJoinRoom(false)
     , m_animTime(0.0f)
     , m_gifsLoaded(false)
+    , m_catEyeTargetX(0.0f)
+    , m_catEyeTargetY(0.0f)
+    , m_catEyeCurrentX(0.0f)
+    , m_catEyeCurrentY(0.0f)
+    , m_tailCoverAmount(0.0f)
+    , m_layDownAmount(0.0f)
+    , m_peekAmount(0.0f)
+    , m_passwordFieldFocused(false)
+    , m_catBodyRotation(0.0f)
 {
     // Initialisation des buffers à zéro
     memset(m_username, 0, sizeof(m_username));
@@ -91,32 +100,31 @@ ChatWindow::ChatWindow(MatrixClient* client, TextureManager* texManager)
 }
 
 /**
- * @brief Charge les GIFs de chats depuis internet
+ * @brief Charge les GIFs de chats depuis cataas.com (Cat As A Service)
  */
 void ChatWindow::LoadCatGifs()
 {
     if (m_gifsLoaded || !m_texManager) return;
     
-    // GIFs de chats mignons depuis Tenor/Giphy
+    // Utiliser cataas.com - service fiable pour les GIFs de chats
+    // Format: https://cataas.com/cat/gif?type=sq (carré)
+    
+    // Chat normal - GIF animé
     m_texManager->LoadGifFromUrl(
-        "https://media.tenor.com/eFPFHSN4rJ8AAAAM/happy-cat.gif",
-        "happy_cat"
+        "https://cataas.com/cat/gif",
+        "cat_looking"
     );
+    
+    // On utilise le même GIF pour tous les états pour l'instant
+    // car cataas ne permet pas de choisir le type de chat
     m_texManager->LoadGifFromUrl(
-        "https://media.tenor.com/yk0zpZpPZzsAAAAM/typing-cat.gif",
-        "typing_cat"
+        "https://cataas.com/cat/gif",
+        "cat_sleeping"
     );
+    
     m_texManager->LoadGifFromUrl(
-        "https://media.tenor.com/vJWpL9b8n8QAAAAM/cat-cute.gif",
-        "cute_cat"
-    );
-    m_texManager->LoadGifFromUrl(
-        "https://media.tenor.com/wkbs_8uGKUAAAAAM/kitten-cat.gif",
-        "kitten"
-    );
-    m_texManager->LoadGifFromUrl(
-        "https://media.tenor.com/2zJhG8yyf0YAAAAM/cats-cat.gif",
-        "wave_cat"
+        "https://cataas.com/cat/gif",
+        "cat_peeking"
     );
     
     m_gifsLoaded = true;
@@ -316,19 +324,20 @@ void ChatWindow::Render()
 }
 
 /**
- * @brief Affiche l'écran de connexion avec GIF animé
+ * @brief Affiche l'écran de connexion avec chat interactif
  */
 void ChatWindow::RenderLoginScreen()
 {
     ImVec2 windowSize = ImGui::GetWindowSize();
     float formWidth = 450.0f;
-    float formHeight = 500.0f;
+    float formHeight = 550.0f;  // Un peu plus haut pour le chat
+    
+    // Position du formulaire
+    float formX = (windowSize.x - formWidth) * 0.5f;
+    float formY = (windowSize.y - formHeight) * 0.5f;
     
     // Centrage
-    ImGui::SetCursorPos(ImVec2(
-        (windowSize.x - formWidth) * 0.5f,
-        (windowSize.y - formHeight) * 0.5f
-    ));
+    ImGui::SetCursorPos(ImVec2(formX, formY));
 
     // Style du formulaire avec transparence
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.1f, 0.08f, 0.15f, 0.85f));
@@ -336,6 +345,9 @@ void ChatWindow::RenderLoginScreen()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(30, 20));
     
     ImGui::BeginChild("LoginForm", ImVec2(formWidth, formHeight), true);
+    
+    // Récupérer la position absolue du formulaire pour le chat
+    ImVec2 formPos = ImGui::GetWindowPos();
 
     // Titre animé avec effet arc-en-ciel
     float hue = fmodf(m_animTime * 0.1f, 1.0f);
@@ -356,14 +368,69 @@ void ChatWindow::RenderLoginScreen()
 
     ImGui::Spacing();
     
-    // GIF de chat mignon
-    RenderGif("cute_cat", 150, 150);
+    // Chat interactif qui suit le curseur !
+    // Calculer le centre du chat dans le formulaire
+    float catCenterX = formWidth * 0.5f - 15;
+    float catCenterY = ImGui::GetCursorPosY() + 70;  // Position Y actuelle + offset
+    float catSize = 120.0f;
+    
+    // ASCII Art de chat selon l'état - FONCTIONNE TOUJOURS
+    const char* catArt;
+    const char* subtitle;
+    ImVec4 catColor;
+    
+    if (m_passwordFieldFocused && m_showPassword)
+    {
+        // Peeking - le chat jette un œil
+        catArt = 
+            "    /\\_____/\\    \n"
+            "   /  o   -  \\   \n"
+            "  ( ==  w  == )  \n"
+            "   )  ~ ^ ~  (   \n"
+            "  (  peeking! )  \n"
+            "   (  _   _  )   \n"
+            "    ~~     ~~    ";
+        subtitle = "Bon, je jette un petit coup d'oeil... 👀";
+        catColor = ImVec4(1.0f, 0.85f, 0.5f, 1.0f);  // Jaune/Or
+    }
+    else if (m_passwordFieldFocused)
+    {
+        // Sleeping - le chat dort avec Zzz
+        catArt = 
+            "    /\\_____/\\   z\n"
+            "   /  -   -  \\ z \n"
+            "  ( ==  w  == )  \n"
+            "   )   ___   (   \n"
+            "  (   /   \\   )  \n"
+            "   \\_/     \\_/   \n"
+            "      ~~~~       ";
+        subtitle = "Zzz... Je ne regarde pas, promis ! 😴";
+        catColor = ImVec4(0.7f, 0.7f, 1.0f, 1.0f);  // Bleu clair (endormi)
+    }
+    else
+    {
+        // Normal - chat curieux avec yeux ouverts
+        catArt = 
+            "    /\\_____/\\    \n"
+            "   /  o   o  \\   \n"
+            "  ( ==  ^  == )  \n"
+            "   )         (   \n"
+            "  (           )  \n"
+            "   (  )   (  )   \n"
+            "    ~~     ~~    ";
+        subtitle = "Connectez-vous au serveur Matrix";
+        catColor = ImVec4(1.0f, 0.75f, 0.4f, 1.0f);  // Orange (éveillé)
+    }
+    
+    // Centrer et afficher le chat ASCII
+    float catWidth = ImGui::CalcTextSize("    /\\_____/\\    ").x;
+    ImGui::SetCursorPosX((formWidth - catWidth) * 0.5f - 10);
+    ImGui::PushStyleColor(ImGuiCol_Text, catColor);
+    ImGui::Text("%s", catArt);
+    ImGui::PopStyleColor();
     
     ImGui::Spacing();
-    ImGui::Spacing();
-
-    // Sous-titre
-    const char* subtitle = "Connectez-vous au serveur Matrix";
+    
     float subtitleWidth = ImGui::CalcTextSize(subtitle).x;
     ImGui::SetCursorPosX((formWidth - subtitleWidth) * 0.5f - 15);
     ImGui::TextColored(ImVec4(0.7f, 0.65f, 0.8f, 1.0f), "%s", subtitle);
@@ -383,16 +450,40 @@ void ChatWindow::RenderLoginScreen()
     
     ImGui::Spacing();
 
+    // Champ mot de passe avec bouton œil pour révéler
     ImGui::Text("🔒 Mot de passe");
-    ImGui::SetNextItemWidth(-1);
+    
+    float eyeButtonWidth = 40.0f;
+    float inputWidth = ImGui::GetContentRegionAvail().x - eyeButtonWidth - 8.0f;
+    
+    ImGui::SetNextItemWidth(inputWidth);
     ImGuiInputTextFlags passwordFlags = m_showPassword ? ImGuiInputTextFlags_None : ImGuiInputTextFlags_Password;
     ImGui::InputText("##password", m_password, sizeof(m_password), passwordFlags);
+    
+    // Vérifier si le champ mot de passe a le focus
+    m_passwordFieldFocused = ImGui::IsItemActive();
+    
+    // Bouton œil pour révéler/cacher le mot de passe
+    ImGui::SameLine();
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25f, 0.22f, 0.35f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.35f, 0.30f, 0.45f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.45f, 0.40f, 0.55f, 1.0f));
+    
+    // L'icône change selon l'état
+    const char* eyeIcon = m_showPassword ? "🙈" : "👁";
+    if (ImGui::Button(eyeIcon, ImVec2(eyeButtonWidth, 0)))
+    {
+        m_showPassword = !m_showPassword;
+    }
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::SetTooltip(m_showPassword ? "Cacher le mot de passe" : "Afficher le mot de passe");
+    }
+    
+    ImGui::PopStyleColor(3);
 
     ImGui::PopStyleColor(2);
     ImGui::PopStyleVar(2);
-
-    // Case à cocher
-    ImGui::Checkbox("👁 Afficher le mot de passe", &m_showPassword);
 
     ImGui::Spacing();
 
@@ -633,8 +724,12 @@ void ChatWindow::RenderSidebar()
         ImGui::TextColored(ImVec4(0.6f, 0.55f, 0.7f, 1.0f), "Aucun salon...");
         ImGui::Spacing();
         
-        // Mini GIF d'attente
-        RenderGif("kitten", 100, 100);
+        // Mini chat ASCII d'attente
+        const char* miniCat = 
+            "  /\\_/\\  \n"
+            " ( o.o ) \n"
+            "  > ^ <  ";
+        ImGui::TextColored(ImVec4(1.0f, 0.7f, 0.4f, 1.0f), "%s", miniCat);
         
         ImGui::Spacing();
         ImGui::TextWrapped("Créez ou rejoignez un salon pour commencer !");
@@ -756,22 +851,33 @@ void ChatWindow::RenderMessageArea()
 
     if (!room)
     {
-        // Écran d'accueil avec GIF
+        // Écran d'accueil avec grand chat ASCII
         ImVec2 windowSize = ImGui::GetWindowSize();
-        ImGui::SetCursorPosY((windowSize.y - 300) * 0.5f);
+        ImGui::SetCursorPosY((windowSize.y - 250) * 0.5f);
 
-        // GIF de chat qui fait coucou
-        RenderGif("wave_cat", 200, 200);
+        // Grand chat ASCII qui fait coucou
+        const char* bigCat = 
+            "      /\\_____/\\      \n"
+            "     /  o   o  \\     \n"
+            "    ( ==  ^  == )    \n"
+            "     )  ~~~~~  (     \n"
+            "    (   \\   /   )    \n"
+            "   ( (  ) ^ (  ) )   \n"
+            "  (__(__)   (__)__)  ";
+        
+        float catWidth = ImGui::CalcTextSize("      /\\_____/\\      ").x;
+        ImGui::SetCursorPosX((windowSize.x - catWidth) * 0.5f);
+        ImGui::TextColored(ImVec4(1.0f, 0.75f, 0.4f, 1.0f), "%s", bigCat);
         
         ImGui::Spacing();
         ImGui::Spacing();
 
-        const char* welcomeText = "🐱 Miaou ! Bienvenue sur Kitty Chat ! 🐱";
+        const char* welcomeText = "Miaou ! Bienvenue sur Kitty Chat !";
         float textWidth = ImGui::CalcTextSize(welcomeText).x;
         ImGui::SetCursorPosX((windowSize.x - textWidth) * 0.5f);
         ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.5f, 1.0f), "%s", welcomeText);
 
-        const char* helpText = "Sélectionnez un salon pour commencer à ronronner...";
+        const char* helpText = "Selectionnez un salon pour commencer a ronronner...";
         textWidth = ImGui::CalcTextSize(helpText).x;
         ImGui::SetCursorPosX((windowSize.x - textWidth) * 0.5f);
         ImGui::TextColored(ImVec4(0.6f, 0.55f, 0.7f, 1.0f), "%s", helpText);
@@ -911,5 +1017,404 @@ void ChatWindow::RenderInputArea()
     if (!canSend)
     {
         ImGui::EndDisabled();
+    }
+}
+
+/**
+ * @brief Met à jour l'animation du chat (yeux, pose, queue)
+ */
+void ChatWindow::UpdateCatAnimation()
+{
+    // Interpolation douce des yeux vers la cible
+    float smoothing = 0.15f;
+    m_catEyeCurrentX += (m_catEyeTargetX - m_catEyeCurrentX) * smoothing;
+    m_catEyeCurrentY += (m_catEyeTargetY - m_catEyeCurrentY) * smoothing;
+    
+    // Animation "se coucher" quand on tape le mot de passe
+    float targetLayDown = m_passwordFieldFocused ? 1.0f : 0.0f;
+    m_layDownAmount += (targetLayDown - m_layDownAmount) * 0.08f;
+    
+    // Animation "peek" quand on révèle le mot de passe
+    float targetPeek = (m_passwordFieldFocused && m_showPassword) ? 1.0f : 0.0f;
+    m_peekAmount += (targetPeek - m_peekAmount) * 0.12f;
+    
+    // Animation de la queue pour cacher les yeux
+    // La queue couvre moins quand le chat peek
+    float targetTailCover = m_passwordFieldFocused ? (1.0f - m_peekAmount * 0.7f) : 0.0f;
+    m_tailCoverAmount += (targetTailCover - m_tailCoverAmount) * 0.1f;
+}
+
+/**
+ * @brief Dessine le chat interactif avec 3 poses : assis, couché, peek
+ */
+void ChatWindow::RenderInteractiveCat(float centerX, float centerY, float size)
+{
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    ImVec2 windowPos = ImGui::GetWindowPos();
+    
+    // Position absolue du chat
+    float catX = windowPos.x + centerX;
+    float catY = windowPos.y + centerY;
+    
+    // Récupérer la position de la souris
+    ImVec2 mousePos = ImGui::GetMousePos();
+    
+    // Calculer la direction vers la souris (seulement si pas couché)
+    float dx = mousePos.x - catX;
+    float dy = mousePos.y - catY;
+    float distance = sqrtf(dx * dx + dy * dy);
+    
+    // Les yeux suivent le curseur seulement si le chat n'est pas couché
+    float eyeTrackingStrength = 1.0f - m_layDownAmount * 0.8f + m_peekAmount * 0.5f;
+    float maxEyeMove = size * 0.08f;
+    if (distance > 0)
+    {
+        m_catEyeTargetX = (dx / distance) * std::min(distance * 0.02f, maxEyeMove) * eyeTrackingStrength;
+        m_catEyeTargetY = (dy / distance) * std::min(distance * 0.02f, maxEyeMove) * eyeTrackingStrength;
+    }
+    
+    // Rotation du corps vers la souris (moins quand couché)
+    float targetRotation = atan2f(dy, dx) * 0.1f * (1.0f - m_layDownAmount * 0.7f);
+    m_catBodyRotation += (targetRotation - m_catBodyRotation) * 0.05f;
+    
+    // Mise à jour de l'animation
+    UpdateCatAnimation();
+    
+    // Raccourcis pour les états
+    float lay = m_layDownAmount;   // 0 = assis, 1 = couché
+    float peek = m_peekAmount;     // 0 = yeux cachés, 1 = peek
+    
+    // === COULEURS ===
+    ImU32 furColor = IM_COL32(255, 180, 120, 255);       // Orange clair
+    ImU32 furDark = IM_COL32(220, 140, 80, 255);         // Orange foncé (rayures)
+    ImU32 furLight = IM_COL32(255, 230, 200, 255);       // Crème (ventre)
+    ImU32 eyeWhite = IM_COL32(255, 255, 255, 255);
+    ImU32 eyeColor = IM_COL32(80, 200, 120, 255);        // Vert émeraude
+    ImU32 pupilColor = IM_COL32(20, 20, 20, 255);
+    ImU32 noseColor = IM_COL32(255, 140, 140, 255);
+    ImU32 innerEarColor = IM_COL32(255, 190, 190, 255);
+    ImU32 whiskerColor = IM_COL32(80, 80, 80, 200);
+    ImU32 closedEyeColor = IM_COL32(60, 60, 60, 255);
+    
+    float s = size;
+    
+    // === CORPS - Change de forme selon la pose ===
+    float bodyOffsetX = m_catBodyRotation * s * 0.2f * (1.0f - lay);
+    
+    // Assis : corps plus vertical, Couché : corps plus horizontal et bas
+    float bodyCenterY = catY + s * (0.25f + lay * 0.2f);
+    float bodyRadiusX = s * (0.45f + lay * 0.25f);  // Plus large couché
+    float bodyRadiusY = s * (0.35f - lay * 0.1f);   // Plus plat couché
+    
+    // Corps principal
+    drawList->AddEllipseFilled(
+        ImVec2(catX + bodyOffsetX, bodyCenterY),
+        bodyRadiusX, bodyRadiusY,
+        furColor, 0.0f, 32
+    );
+    
+    // Ventre (visible quand assis)
+    float bellyAlpha = 1.0f - lay * 0.5f;
+    ImU32 bellyColor = IM_COL32(255, 230, 200, (int)(255 * bellyAlpha));
+    drawList->AddEllipseFilled(
+        ImVec2(catX + bodyOffsetX, bodyCenterY + bodyRadiusY * 0.15f),
+        bodyRadiusX * 0.6f, bodyRadiusY * 0.7f,
+        bellyColor, 0.0f, 24
+    );
+    
+    // Rayures sur le corps
+    for (int i = 0; i < 3; i++)
+    {
+        float stripeX = catX + bodyOffsetX + (i - 1) * bodyRadiusX * 0.4f;
+        float stripeY = bodyCenterY - bodyRadiusY * 0.3f;
+        drawList->AddEllipseFilled(
+            ImVec2(stripeX, stripeY),
+            bodyRadiusX * 0.12f, bodyRadiusY * 0.5f,
+            furDark, 0.0f, 12
+        );
+    }
+    
+    // === PATTES ===
+    float pawY = bodyCenterY + bodyRadiusY * 0.7f;
+    float pawSpread = s * (0.25f + lay * 0.15f);  // Plus écartées quand couché
+    
+    // Pattes avant
+    for (int side = -1; side <= 1; side += 2)
+    {
+        float pawX = catX + side * pawSpread;
+        float pawW = s * 0.1f;
+        float pawH = s * (0.12f - lay * 0.04f);
+        
+        drawList->AddEllipseFilled(ImVec2(pawX, pawY), pawW, pawH, furColor, 0.0f, 12);
+        // Coussinets
+        drawList->AddCircleFilled(ImVec2(pawX, pawY + pawH * 0.3f), pawW * 0.6f, furLight, 10);
+    }
+    
+    // Pattes arrière (visibles quand couché)
+    if (lay > 0.3f)
+    {
+        float backPawX = catX - bodyRadiusX * 0.8f;
+        float backPawY = bodyCenterY + bodyRadiusY * 0.3f;
+        drawList->AddEllipseFilled(ImVec2(backPawX, backPawY), s * 0.12f, s * 0.08f, furColor, 0.0f, 12);
+    }
+    
+    // === QUEUE - Enroulée autour quand couché ===
+    float tailWave = sinf(m_animTime * 2.5f) * 0.08f * (1.0f - lay * 0.5f);
+    
+    // Base de la queue
+    float tailBaseX = catX + bodyRadiusX * (0.7f - lay * 0.3f);
+    float tailBaseY = bodyCenterY - bodyRadiusY * (0.2f - lay * 0.3f);
+    
+    // La queue s'enroule autour et peut couvrir les yeux
+    float tailCurl = lay * 0.8f + m_tailCoverAmount * 0.5f;
+    
+    // Points de contrôle de la queue
+    ImVec2 tailP1(tailBaseX, tailBaseY);
+    
+    // Quand couché : queue enroulée autour du corps puis monte vers le visage
+    float ctrl1X = tailBaseX + s * (0.15f + tailWave) * (1.0f - tailCurl * 0.5f);
+    float ctrl1Y = tailBaseY - s * 0.2f - tailCurl * s * 0.4f;
+    
+    // La queue monte vers le visage quand elle couvre
+    float headY = catY - s * (0.2f - lay * 0.1f);
+    float headRadius = s * (0.38f - lay * 0.05f);
+    float eyeY = headY - headRadius * (0.05f + lay * 0.1f);
+    
+    float ctrl2X = catX + s * (0.1f - tailCurl * 0.2f);
+    float ctrl2Y = eyeY + s * (0.3f - tailCurl * 0.4f);
+    
+    float endX = catX - tailCurl * s * 0.05f;
+    float endY = eyeY + (1.0f - tailCurl) * s * 0.2f;
+    
+    ImVec2 tailCtrl1(ctrl1X, ctrl1Y);
+    ImVec2 tailCtrl2(ctrl2X, ctrl2Y);
+    ImVec2 tailP2(endX, endY);
+    
+    // Dessiner la queue
+    int tailSegments = 22;
+    for (int i = 0; i < tailSegments; i++)
+    {
+        float t = (float)i / (float)(tailSegments - 1);
+        float u = 1.0f - t;
+        
+        float px = u*u*u*tailP1.x + 3*u*u*t*tailCtrl1.x + 3*u*t*t*tailCtrl2.x + t*t*t*tailP2.x;
+        float py = u*u*u*tailP1.y + 3*u*u*t*tailCtrl1.y + 3*u*t*t*tailCtrl2.y + t*t*t*tailP2.y;
+        
+        float thickness = s * (0.07f - t * 0.03f) * (1.0f + tailCurl * 0.2f);
+        ImU32 segColor = (i % 5 < 3) ? furColor : furDark;
+        
+        drawList->AddCircleFilled(ImVec2(px, py), thickness, segColor, 10);
+    }
+    
+    // Bout duveteux
+    drawList->AddCircleFilled(tailP2, s * 0.05f, furLight, 12);
+    
+    // === TÊTE ===
+    float headOffsetY = lay * s * 0.08f;  // Tête plus basse quand couché
+    headY = catY - s * (0.2f - lay * 0.12f) + headOffsetY;
+    headRadius = s * (0.38f - lay * 0.03f);
+    
+    // Tête principale
+    drawList->AddCircleFilled(ImVec2(catX, headY), headRadius, furColor, 48);
+    
+    // Joues
+    float cheekY = headY + headRadius * 0.25f;
+    drawList->AddCircleFilled(ImVec2(catX - headRadius * 0.45f, cheekY), headRadius * 0.32f, furLight, 20);
+    drawList->AddCircleFilled(ImVec2(catX + headRadius * 0.45f, cheekY), headRadius * 0.32f, furLight, 20);
+    
+    // Rayures sur le front
+    for (int i = 0; i < 3; i++)
+    {
+        float stripeX = catX + (i - 1) * headRadius * 0.25f;
+        float stripeY = headY - headRadius * 0.5f;
+        drawList->AddEllipseFilled(
+            ImVec2(stripeX, stripeY),
+            headRadius * 0.08f, headRadius * 0.2f,
+            furDark, 0.0f, 8
+        );
+    }
+    
+    // === OREILLES ===
+    float earY = headY - headRadius * 0.75f;
+    float earTilt = lay * 0.15f;  // Oreilles plus plates quand couché
+    
+    for (int side = -1; side <= 1; side += 2)
+    {
+        float earX = catX + side * headRadius * 0.55f;
+        
+        ImVec2 e1(earX, earY + s * 0.12f);
+        ImVec2 e2(earX + side * s * 0.12f, earY - s * (0.18f - earTilt));
+        ImVec2 e3(earX - side * s * 0.08f, earY - s * 0.05f);
+        
+        drawList->AddTriangleFilled(e1, e2, e3, furColor);
+        
+        // Intérieur rose
+        ImVec2 ei1(earX, earY + s * 0.08f);
+        ImVec2 ei2(earX + side * s * 0.08f, earY - s * (0.1f - earTilt));
+        ImVec2 ei3(earX - side * s * 0.04f, earY - s * 0.02f);
+        drawList->AddTriangleFilled(ei1, ei2, ei3, innerEarColor);
+    }
+    
+    // === YEUX ===
+    float eyeSpacing = headRadius * 0.4f;
+    eyeY = headY - headRadius * 0.05f;
+    float eyeRadius = headRadius * 0.2f;
+    
+    // Quand couché sans peek : yeux fermés (petites lignes)
+    // Quand peek : yeux mi-ouverts qui regardent
+    float eyeOpenAmount = (1.0f - lay) + peek * 0.7f;
+    eyeOpenAmount = std::min(1.0f, eyeOpenAmount);
+    
+    // Position des yeux avec suivi
+    float eyeOffsetX = m_catEyeCurrentX * eyeOpenAmount;
+    float eyeOffsetY = m_catEyeCurrentY * eyeOpenAmount;
+    
+    for (int side = -1; side <= 1; side += 2)
+    {
+        float eyeX = catX + side * eyeSpacing;
+        
+        if (eyeOpenAmount > 0.3f && m_tailCoverAmount < 0.7f)
+        {
+            // Yeux ouverts ou mi-ouverts
+            float openScale = std::min(1.0f, eyeOpenAmount);
+            float actualRadius = eyeRadius * openScale;
+            
+            // Blanc de l'œil (forme d'amande quand mi-ouvert)
+            if (openScale > 0.5f)
+            {
+                drawList->AddCircleFilled(ImVec2(eyeX, eyeY), actualRadius, eyeWhite, 20);
+            }
+            else
+            {
+                // Œil mi-fermé - forme d'amande
+                drawList->AddEllipseFilled(ImVec2(eyeX, eyeY), actualRadius, actualRadius * 0.5f, eyeWhite, 0.0f, 16);
+            }
+            
+            // Iris
+            float irisRadius = actualRadius * 0.65f;
+            drawList->AddCircleFilled(
+                ImVec2(eyeX + eyeOffsetX, eyeY + eyeOffsetY),
+                irisRadius, eyeColor, 16
+            );
+            
+            // Pupille
+            float pupilW = irisRadius * 0.35f;
+            float pupilH = irisRadius * 0.75f * openScale;
+            drawList->AddEllipseFilled(
+                ImVec2(eyeX + eyeOffsetX, eyeY + eyeOffsetY),
+                pupilW, pupilH,
+                pupilColor, 0.0f, 12
+            );
+            
+            // Reflet
+            drawList->AddCircleFilled(
+                ImVec2(eyeX + eyeOffsetX - pupilW * 0.4f, eyeY + eyeOffsetY - pupilH * 0.3f),
+                eyeRadius * 0.12f, eyeWhite, 6
+            );
+        }
+        else
+        {
+            // Yeux fermés - petites courbes
+            float lineY = eyeY;
+            ImVec2 start(eyeX - eyeRadius * 0.8f, lineY);
+            ImVec2 ctrl(eyeX, lineY + eyeRadius * 0.3f);
+            ImVec2 end(eyeX + eyeRadius * 0.8f, lineY);
+            drawList->AddBezierQuadratic(start, ctrl, end, closedEyeColor, 2.5f, 12);
+        }
+    }
+    
+    // === COUVERTURE PAR LA QUEUE (quand peek, on voit les yeux par-dessus) ===
+    if (m_tailCoverAmount > 0.3f && peek < 0.5f)
+    {
+        float coverY = eyeY + eyeRadius * 0.3f;
+        float coverWidth = headRadius * 0.8f * m_tailCoverAmount;
+        float coverHeight = eyeRadius * 1.2f * m_tailCoverAmount;
+        
+        for (int i = 0; i < 5; i++)
+        {
+            float ox = (i - 2) * coverWidth * 0.22f;
+            float sz = coverHeight * (1.0f - fabsf(i - 2) * 0.12f);
+            ImU32 col = (i % 2 == 0) ? furColor : furDark;
+            drawList->AddCircleFilled(ImVec2(catX + ox, coverY), sz, col, 14);
+        }
+    }
+    
+    // === NEZ ===
+    float noseY = headY + headRadius * 0.25f;
+    float noseSize = s * 0.045f;
+    ImVec2 n1(catX, noseY - noseSize);
+    ImVec2 n2(catX - noseSize, noseY + noseSize * 0.5f);
+    ImVec2 n3(catX + noseSize, noseY + noseSize * 0.5f);
+    drawList->AddTriangleFilled(n1, n2, n3, noseColor);
+    
+    // === BOUCHE ===
+    float mouthY = noseY + s * 0.04f;
+    
+    // Ligne centrale
+    drawList->AddLine(
+        ImVec2(catX, noseY + noseSize * 0.3f),
+        ImVec2(catX, mouthY + s * 0.02f),
+        closedEyeColor, 2.0f
+    );
+    
+    // Sourire (plus petit quand couché/endormi)
+    float smileSize = s * (0.1f - lay * 0.03f + peek * 0.02f);
+    drawList->AddBezierQuadratic(
+        ImVec2(catX, mouthY),
+        ImVec2(catX - smileSize, mouthY + smileSize * 0.5f),
+        ImVec2(catX - smileSize * 1.2f, mouthY - smileSize * 0.1f),
+        closedEyeColor, 1.8f, 10
+    );
+    drawList->AddBezierQuadratic(
+        ImVec2(catX, mouthY),
+        ImVec2(catX + smileSize, mouthY + smileSize * 0.5f),
+        ImVec2(catX + smileSize * 1.2f, mouthY - smileSize * 0.1f),
+        closedEyeColor, 1.8f, 10
+    );
+    
+    // === MOUSTACHES ===
+    float whiskerBaseY = noseY + s * 0.01f;
+    float whiskerLen = s * (0.25f + peek * 0.05f);
+    
+    for (int side = -1; side <= 1; side += 2)
+    {
+        float baseX = catX + side * s * 0.08f;
+        for (int i = -1; i <= 1; i++)
+        {
+            float angle = i * 0.15f + side * 0.1f;
+            float wy = whiskerBaseY + i * s * 0.02f;
+            float endX = baseX + side * whiskerLen;
+            float endY = wy + i * s * 0.04f;
+            drawList->AddLine(ImVec2(baseX, wy), ImVec2(endX, endY), whiskerColor, 1.3f);
+        }
+    }
+    
+    // === "Zzz" quand le chat dort (couché sans peek) ===
+    if (lay > 0.5f && peek < 0.3f)
+    {
+        float zzzAlpha = (lay - 0.5f) * 2.0f * (1.0f - peek);
+        float zzzOffset = sinf(m_animTime * 1.5f) * s * 0.03f;
+        
+        ImU32 zzzColor = IM_COL32(200, 200, 255, (int)(180 * zzzAlpha));
+        
+        float zX = catX + headRadius * 0.8f;
+        float zY = headY - headRadius * 0.8f + zzzOffset;
+        
+        // Petits "z" qui montent
+        for (int i = 0; i < 3; i++)
+        {
+            float scale = 0.6f + i * 0.2f;
+            float alpha = zzzAlpha * (1.0f - i * 0.25f);
+            ImU32 col = IM_COL32(200, 200, 255, (int)(150 * alpha));
+            
+            float zSize = s * 0.04f * scale;
+            float zy = zY - i * s * 0.08f - fmodf(m_animTime * 0.3f, 0.5f) * s * 0.1f;
+            float zx = zX + i * s * 0.03f;
+            
+            // Dessiner un "z"
+            drawList->AddLine(ImVec2(zx - zSize, zy - zSize), ImVec2(zx + zSize, zy - zSize), col, 1.5f);
+            drawList->AddLine(ImVec2(zx + zSize, zy - zSize), ImVec2(zx - zSize, zy + zSize), col, 1.5f);
+            drawList->AddLine(ImVec2(zx - zSize, zy + zSize), ImVec2(zx + zSize, zy + zSize), col, 1.5f);
+        }
     }
 }

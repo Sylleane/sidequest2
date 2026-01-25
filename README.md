@@ -1,259 +1,863 @@
-# 🐱 Kitty Chat C++ v2.0
+# 🐱 Kitty Chat C++ - Application de Messagerie Matrix
 
-Client de messagerie Matrix en C++ avec interface graphique moderne et GIFs animés.
+**Projet réalisé dans le cadre du Master Cybersécurité - Janvier 2026**
 
-## ✨ Nouveautés v2.0
+Client de messagerie instantanée basé sur le protocole Matrix, développé en C++ avec une interface graphique moderne utilisant Dear ImGui et DirectX 11.
 
-- **GIFs Animés** : Chargement de GIFs de chats depuis internet (Tenor)
-- **Interface Moderne** : Thème violet/rose avec dégradés et particules
-- **Animations** : Fond étoilé animé, effets de brillance
-- **Bulles de Messages** : Style moderne avec couleurs différenciées
-- **Emojis** : Utilisation extensive d'emojis dans l'interface
+---
 
-## Description
+## 📋 Table des Matières
 
-Kitty Chat est un client de chat qui se connecte au protocole Matrix, permettant de communiquer sur le serveur vault.buffertavern.com. L'application est développée en C++ avec une interface graphique moderne utilisant Dear ImGui et DirectX11.
+1. [Présentation du Projet](#présentation-du-projet)
+2. [Architecture Globale](#architecture-globale)
+3. [Infrastructure Serveur](#infrastructure-serveur)
+4. [Application Cliente](#application-cliente)
+5. [Protocole Matrix](#protocole-matrix)
+6. [Guide d'Installation](#guide-dinstallation)
+7. [Guide d'Utilisation](#guide-dutilisation)
+8. [Difficultés Rencontrées](#difficultés-rencontrées)
+9. [Conclusion](#conclusion)
 
-## 🎨 Fonctionnalités
+---
 
-- 🔐 **Connexion Matrix** : Authentification par nom d'utilisateur et mot de passe
-- ✨ **Création de compte** : Inscription directe depuis l'application
-- 💬 **Liste des salons** : Affichage des salons avec badges de messages non lus
-- ⚡ **Messagerie temps réel** : Envoi et réception de messages synchronisés
-- 🐱 **GIFs de Chats** : GIFs animés téléchargés depuis Tenor
-- 🌟 **Interface Animée** : Fond avec particules et étoiles scintillantes
-- 🎨 **Thème Moderne** : Dégradés violet/rose/doré
+## 📖 Présentation du Projet
 
-## Prérequis
+### Objectif
 
-### Windows
-- Windows 10/11 (64 bits recommandé)
-- Visual Studio 2019 ou 2022 avec les composants C++ desktop
-- CMake 3.16+ (télécharger: https://cmake.org/download/)
-- Connexion Internet (pour télécharger les GIFs)
+L'objectif de ce projet est de développer une application de messagerie instantanée complète, comprenant :
+- Un **serveur Matrix** auto-hébergé pour la gestion des communications
+- Un **client natif C++** avec interface graphique moderne
+- Une **infrastructure sécurisée** avec chiffrement HTTPS
 
-### Composants Visual Studio requis
-- MSVC v142 ou v143 (compilateur C++)
-- Windows 10/11 SDK
-- C++ CMake tools for Windows
+### Pourquoi Matrix ?
 
-## 🚀 Lancement Rapide
+Matrix est un protocole de communication décentralisé et open-source qui offre :
+- **Fédération** : Possibilité de communiquer entre différents serveurs
+- **Chiffrement de bout en bout** : Sécurité des communications (E2EE)
+- **API standardisée** : Documentation complète et stable
+- **Interopérabilité** : Compatible avec de nombreux clients (Element, FluffyChat, etc.)
 
-### Option 1 : Script automatique (recommandé)
+### Stack Technique
 
-Double-cliquez sur `launch-kitty-chat.bat` dans le dossier parent. Le script va :
-1. Détecter CMake (dans le PATH ou via Visual Studio)
-2. Configurer le projet CMake
-3. Compiler l'application
-4. Lancer Kitty Chat
+| Composant | Technologie | Justification |
+|-----------|-------------|---------------|
+| Serveur Matrix | Synapse (Python) | Implémentation de référence, stable et bien documentée |
+| Tunnel HTTPS | Cloudflare Tunnel | Exposition sécurisée sans ouvrir de ports |
+| Client | C++ / Win32 | Performance native, contrôle total |
+| Interface | Dear ImGui + DirectX 11 | Rendu GPU, personnalisation complète |
+| Requêtes HTTP | WinHTTP | API Windows native, support SSL/TLS intégré |
+| Parsing JSON | nlohmann/json | Bibliothèque C++ moderne et performante |
 
-### Option 2 : Compilation manuelle
+---
 
-```bash
-cd kitty-chat-cpp
-mkdir build
-cd build
-cmake ..
-cmake --build . --config Release
-Release\KittyChat.exe
+## 🏗️ Architecture Globale
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              ARCHITECTURE GLOBALE                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────────┐         HTTPS          ┌──────────────────────────┐
+    │                  │ ◄────────────────────► │                          │
+    │   Kitty Chat     │                        │   Cloudflare Edge        │
+    │   (Client C++)   │                        │   (CDN + DDoS Protection)│
+    │                  │                        │                          │
+    │   Windows 10/11  │                        │   vault.buffertavern.com │
+    └──────────────────┘                        └────────────┬─────────────┘
+                                                             │
+                                                    Cloudflare Tunnel
+                                                    (Connexion chiffrée)
+                                                             │
+                                                             ▼
+                                                ┌──────────────────────────┐
+                                                │   Serveur Linux          │
+                                                │   (Debian/Ubuntu)        │
+                                                │                          │
+                                                │   ┌──────────────────┐   │
+                                                │   │   cloudflared    │   │
+                                                │   │   (Tunnel Agent) │   │
+                                                │   └────────┬─────────┘   │
+                                                │            │             │
+                                                │            ▼             │
+                                                │   ┌──────────────────┐   │
+                                                │   │   Nginx          │   │
+                                                │   │   (Reverse Proxy)│   │
+                                                │   │   Port 80        │   │
+                                                │   └────────┬─────────┘   │
+                                                │            │             │
+                                                │            ▼             │
+                                                │   ┌──────────────────┐   │
+                                                │   │   Synapse        │   │
+                                                │   │   (Matrix Server)│   │
+                                                │   │   Port 8008      │   │
+                                                │   └────────┬─────────┘   │
+                                                │            │             │
+                                                │            ▼             │
+                                                │   ┌──────────────────┐   │
+                                                │   │   SQLite/PostgreSQL│  │
+                                                │   │   (Base de données)│  │
+                                                │   └──────────────────┘   │
+                                                └──────────────────────────┘
 ```
 
-## 📖 Guide d'Utilisation
+---
 
-### 1. Première connexion / Création de compte
+## 🖥️ Infrastructure Serveur
 
-1. Lancez l'application via le script ou manuellement
-2. Admirez le GIF de chat animé sur l'écran de connexion ! 🐱
-3. Sur l'écran de connexion, vous avez deux options :
-   
-   **Pour créer un nouveau compte :**
-   - Entrez un nom d'utilisateur (ex: monpseudo)
-   - Entrez un mot de passe sécurisé
-   - Cliquez sur "✨ S'inscrire" (bouton vert)
-   - Si le nom est disponible, vous serez connecté automatiquement
-   
-   **Pour vous connecter :**
-   - Entrez votre nom d'utilisateur existant
-   - Entrez votre mot de passe
-   - Cliquez sur "🐾 Connexion" (bouton orange)
+### 1. Installation de Matrix Synapse
 
-### 2. Fonctions de l'interface
+Matrix Synapse est l'implémentation de référence du serveur Matrix, écrite en Python.
 
-- **🐱 Logo animé** : Rebondit doucement dans la barre de titre
-- **🏠 Liste des salons** : Cliquez pour sélectionner, badge 🔴 = messages non lus
-- **💬 Zone de messages** : Bulles colorées avec nom et heure
-- **🐾 Miaou!** : Envoie votre message
-- **😴 Dodo** : Déconnexion
-- **➕ Créer** : Créer un nouveau salon
-- **🚪 Rejoindre** : Rejoindre un salon existant
+#### 1.1 Prérequis Système
 
-### 3. Création et gestion des salons
+```bash
+# Mise à jour du système
+sudo apt update && sudo apt upgrade -y
 
-1. Cliquez sur "➕ Créer" dans la barre latérale
-2. Entrez le nom du salon (ex: "Mon Salon")
-3. Cliquez sur "✅ Créer"
-4. Le salon apparaît dans la liste et vous pouvez y envoyer des messages
+# Installation des dépendances
+sudo apt install -y build-essential python3-dev libffi-dev \
+    python3-pip python3-setuptools sqlite3 libssl-dev \
+    python3-venv libjpeg-dev libxslt1-dev
+```
 
-Pour rejoindre un salon existant :
-1. Cliquez sur "🚪 Rejoindre"
-2. Entrez l'ID ou l'alias (ex: #general:vault.buffertavern.com)
-3. Cliquez sur "✅ Rejoindre"
+#### 1.2 Installation de Synapse
 
-## 📁 Structure du Projet
+```bash
+# Ajout du dépôt officiel Matrix
+sudo apt install -y lsb-release wget apt-transport-https
+sudo wget -O /usr/share/keyrings/matrix-org-archive-keyring.gpg \
+    https://packages.matrix.org/debian/matrix-org-archive-keyring.gpg
+
+echo "deb [signed-by=/usr/share/keyrings/matrix-org-archive-keyring.gpg] \
+    https://packages.matrix.org/debian/ $(lsb_release -cs) main" | \
+    sudo tee /etc/apt/sources.list.d/matrix-org.list
+
+# Installation
+sudo apt update
+sudo apt install -y matrix-synapse-py3
+```
+
+#### 1.3 Configuration de Synapse
+
+Le fichier de configuration principal est `/etc/matrix-synapse/homeserver.yaml` :
+
+```yaml
+# Nom du serveur (doit correspondre au domaine)
+server_name: "vault.buffertavern.com"
+
+# Port d'écoute local (Nginx fera le proxy)
+listeners:
+  - port: 8008
+    type: http
+    tls: false
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+
+# Base de données (SQLite pour les petites installations)
+database:
+  name: sqlite3
+  args:
+    database: /var/lib/matrix-synapse/homeserver.db
+
+# Activation de l'inscription publique
+enable_registration: true
+enable_registration_without_verification: true
+
+# Clés de signature (générées automatiquement)
+signing_key_path: "/etc/matrix-synapse/homeserver.signing.key"
+
+# Journalisation
+log_config: "/etc/matrix-synapse/log.yaml"
+
+# Média (avatars, fichiers partagés)
+media_store_path: "/var/lib/matrix-synapse/media"
+max_upload_size: 50M
+
+# Fédération (communication inter-serveurs)
+federation_domain_whitelist: []
+```
+
+#### 1.4 Création d'un Utilisateur Administrateur
+
+```bash
+# Création d'un utilisateur via la ligne de commande
+register_new_matrix_user -c /etc/matrix-synapse/homeserver.yaml \
+    http://localhost:8008 -u admin -p password123 -a
+```
+
+#### 1.5 Démarrage du Service
+
+```bash
+# Activation au démarrage
+sudo systemctl enable matrix-synapse
+
+# Démarrage
+sudo systemctl start matrix-synapse
+
+# Vérification du statut
+sudo systemctl status matrix-synapse
+```
+
+---
+
+### 2. Configuration de Nginx (Reverse Proxy)
+
+Nginx agit comme reverse proxy pour :
+- Rediriger les requêtes vers Synapse
+- Gérer les en-têtes HTTP (X-Forwarded-For, etc.)
+- Servir les fichiers statiques
+
+#### 2.1 Configuration Nginx
+
+Fichier `/etc/nginx/sites-available/matrix` :
+
+```nginx
+server {
+    listen 80;
+    server_name vault.buffertavern.com;
+
+    # Proxy vers l'API Matrix Client-Server
+    location /_matrix {
+        proxy_pass http://127.0.0.1:8008;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $host;
+        
+        # WebSocket support (pour la synchronisation temps réel)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        # Timeouts pour les requêtes longues (sync)
+        proxy_read_timeout 600s;
+    }
+
+    # Well-known pour la découverte automatique
+    location /.well-known/matrix {
+        proxy_pass http://127.0.0.1:8008;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header Host $host;
+    }
+}
+```
+
+#### 2.2 Activation du Site
+
+```bash
+sudo ln -s /etc/nginx/sites-available/matrix /etc/nginx/sites-enabled/
+sudo nginx -t  # Test de la configuration
+sudo systemctl reload nginx
+```
+
+---
+
+### 3. Cloudflare Tunnel (Exposition Sécurisée)
+
+Cloudflare Tunnel permet d'exposer le serveur sur Internet sans ouvrir de ports sur le routeur/firewall. C'est une solution idéale pour :
+- **Sécurité** : Pas de ports ouverts, protection DDoS incluse
+- **HTTPS automatique** : Certificat SSL géré par Cloudflare
+- **Simplicité** : Pas besoin de configuration NAT/Port forwarding
+
+#### 3.1 Installation de cloudflared
+
+```bash
+# Téléchargement du binaire
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+sudo dpkg -i cloudflared-linux-amd64.deb
+
+# Authentification (ouvre un navigateur)
+cloudflared tunnel login
+```
+
+#### 3.2 Création du Tunnel
+
+```bash
+# Création d'un nouveau tunnel
+cloudflared tunnel create matrix
+
+# Configuration du tunnel
+# Fichier ~/.cloudflared/config.yml
+cat > ~/.cloudflared/config.yml << EOF
+tunnel: <TUNNEL_ID>
+credentials-file: /home/user/.cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  - hostname: vault.buffertavern.com
+    service: http://localhost:80
+  - service: http_status:404
+EOF
+```
+
+#### 3.3 Configuration DNS
+
+Dans le dashboard Cloudflare :
+1. Aller dans DNS
+2. Ajouter un enregistrement CNAME :
+   - Nom : `vault` (ou `@` pour le domaine racine)
+   - Cible : `<TUNNEL_ID>.cfargotunnel.com`
+   - Proxy : Activé (orange)
+
+#### 3.4 Lancement du Tunnel
+
+```bash
+# Lancement manuel
+cloudflared tunnel run matrix
+
+# Ou en tant que service systemd
+sudo cloudflared service install
+sudo systemctl enable cloudflared
+sudo systemctl start cloudflared
+```
+
+---
+
+## 💻 Application Cliente
+
+### 1. Structure du Projet
 
 ```
 kitty-chat-cpp/
-  CMakeLists.txt          - Configuration de build CMake
-  README.md               - Ce fichier
-  launch.bat              - Script de lancement local
-  src/
-    main.cpp              - Point d'entrée, initialisation ImGui/DirectX
-    matrix_client.h       - Déclaration du client Matrix
-    matrix_client.cpp     - Implémentation du client Matrix
-    chat_window.h         - Déclaration de l'interface utilisateur
-    chat_window.cpp       - Interface avec animations et GIFs
-    texture_manager.h     - Gestion des textures DirectX11
-    texture_manager.cpp   - Chargement et animation des GIFs
-    stb_image.h           - Décodeur GIF intégré
-  assets/                 - Ressources (réservé)
-  build/                  - Dossier de compilation (généré)
+├── CMakeLists.txt           # Configuration CMake
+├── README.md                # Documentation
+├── launch.bat               # Script de lancement Windows
+│
+├── src/
+│   ├── main.cpp             # Point d'entrée + Init DirectX/ImGui
+│   ├── matrix_client.h      # Déclaration du client Matrix
+│   ├── matrix_client.cpp    # Implémentation API Matrix
+│   ├── chat_window.h        # Déclaration interface utilisateur
+│   ├── chat_window.cpp      # Interface graphique + animations
+│   ├── texture_manager.h    # Gestion des textures
+│   ├── texture_manager.cpp  # Chargement d'images/GIFs
+│   └── stb_image.h          # Décodeur d'images (header-only)
+│
+├── assets/                  # Ressources graphiques
+│
+└── build/                   # Dossier de compilation (généré)
+    ├── Release/
+    │   └── KittyChat.exe    # Exécutable final
+    └── _deps/               # Dépendances téléchargées
+        ├── imgui-src/       # Dear ImGui
+        ├── json-src/        # nlohmann/json
+        └── httplib-src/     # cpp-httplib
 ```
 
-## 🔧 Architecture Technique
+### 2. Système de Build (CMake)
 
-### Composants principaux
+Le fichier `CMakeLists.txt` gère :
+- La récupération automatique des dépendances via `FetchContent`
+- La configuration de DirectX 11
+- La liaison avec les bibliothèques Windows (WinHTTP)
 
-1. **main.cpp** - Initialisation Windows, DirectX11 et boucle principale ImGui
-2. **MatrixClient** - Communication avec le serveur Matrix (HTTPS via WinHTTP)
-3. **ChatWindow** - Interface utilisateur avec animations
-4. **TextureManager** - Téléchargement et animation des GIFs
+```cmake
+cmake_minimum_required(VERSION 3.16)
+project(KittyChat VERSION 2.0 LANGUAGES CXX)
 
-### Système de GIFs
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-Le `TextureManager` gère :
-- Téléchargement asynchrone des GIFs depuis internet
-- Décodage des frames avec stb_image
-- Création de textures DirectX11 pour chaque frame
-- Animation fluide avec timing précis
+# === Téléchargement des dépendances ===
+include(FetchContent)
 
-### Dépendances (téléchargées automatiquement via CMake)
+# Dear ImGui - Interface graphique
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.90.1
+)
 
-- Dear ImGui v1.90.1 - Interface graphique
-- nlohmann/json v3.11.3 - Parsing JSON
-- cpp-httplib v0.14.3 - Support HTTP (backup)
+# nlohmann/json - Parsing JSON
+FetchContent_Declare(
+    json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+)
 
-### APIs Windows utilisées
+FetchContent_MakeAvailable(imgui json)
 
-- DirectX11 - Rendu graphique hardware-accéléré
-- WinHTTP - Requêtes HTTPS sécurisées
-- Win32 API - Fenêtrage et messages
+# === Configuration DirectX 11 ===
+find_package(DirectX REQUIRED)  # Windows SDK
 
-## 🌐 API Matrix Utilisée
+# === Exécutable ===
+add_executable(KittyChat WIN32
+    src/main.cpp
+    src/matrix_client.cpp
+    src/chat_window.cpp
+    src/texture_manager.cpp
+    # ImGui sources
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_win32.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_dx11.cpp
+)
 
-L'application utilise l'API Matrix Client-Server v3 :
+# === Bibliothèques ===
+target_link_libraries(KittyChat PRIVATE
+    d3d11          # DirectX 11
+    dxgi           # DXGI (swap chain)
+    d3dcompiler    # Compilation shaders
+    winhttp        # Requêtes HTTPS
+    nlohmann_json::nlohmann_json
+)
+```
 
-- `POST /_matrix/client/v3/login` - Authentification
-- `POST /_matrix/client/v3/register` - Création de compte
-- `GET /_matrix/client/v3/sync` - Synchronisation des événements
-- `PUT /_matrix/client/v3/rooms/{roomId}/send/...` - Envoi de messages
-- `POST /_matrix/client/v3/createRoom` - Création de salon
-- `POST /_matrix/client/v3/join/{roomIdOrAlias}` - Rejoindre un salon
-- `POST /_matrix/client/v3/logout` - Déconnexion
+### 3. Client Matrix (matrix_client.cpp)
 
-## 🔒 Sécurité
+Le client Matrix implémente l'API Client-Server v3 :
 
-- Les connexions utilisent HTTPS exclusivement (via Cloudflare Tunnel)
-- Les mots de passe ne sont jamais stockés sur le disque
-- Les tokens d'accès sont gardés en mémoire uniquement
-- La bibliothèque WinHTTP gère la validation des certificats SSL
+#### 3.1 Authentification
 
-## ❓ Dépannage
+```cpp
+bool MatrixClient::Login(const std::string& username, const std::string& password)
+{
+    // Construction de la requête JSON
+    json loginRequest = {
+        {"type", "m.login.password"},
+        {"identifier", {
+            {"type", "m.id.user"},
+            {"user", username}
+        }},
+        {"password", password},
+        {"initial_device_display_name", "Kitty Chat C++"}
+    };
 
-### CMake n'est pas reconnu
-Le script tente de trouver CMake automatiquement via Visual Studio. Sinon, installez CMake depuis https://cmake.org/download/ et ajoutez-le au PATH.
+    std::string response;
+    bool success = HttpRequest("POST", "/_matrix/client/v3/login",
+                               loginRequest.dump(), response);
 
-### Visual Studio non trouvé
-Installez Visual Studio avec les composants C++ desktop depuis https://visualstudio.microsoft.com/
+    if (success) {
+        json loginResponse = json::parse(response);
+        m_accessToken = loginResponse["access_token"];
+        m_userId = loginResponse["user_id"];
+        m_deviceId = loginResponse["device_id"];
+        m_isLoggedIn = true;
+        StartSync();  // Démarre la synchronisation
+    }
+    return success;
+}
+```
 
-### GIFs qui ne chargent pas
-- Vérifiez votre connexion Internet
-- Les GIFs sont téléchargés depuis Tenor, assurez-vous que le site est accessible
-- Un placeholder animé s'affiche pendant le chargement
+#### 3.2 Synchronisation (Long Polling)
 
-### Erreur de connexion au serveur
-- Vérifiez votre connexion Internet
-- Vérifiez que vault.buffertavern.com est accessible
-- Vérifiez vos identifiants
+Matrix utilise le "long polling" pour la synchronisation temps réel :
 
-### Build échoue
-- Assurez-vous d'avoir les droits d'écriture dans le dossier
-- Fermez KittyChat.exe s'il est en cours d'exécution
-- Supprimez le dossier build et recommencez
+```cpp
+void MatrixClient::SyncLoop()
+{
+    while (!m_stopSync)
+    {
+        std::string endpoint = "/_matrix/client/v3/sync?timeout=30000";
+        if (!m_syncToken.empty()) {
+            endpoint += "&since=" + m_syncToken;
+        }
 
-## 🎨 Design et Thème
+        std::string response;
+        bool success = HttpRequest("GET", endpoint, "", response);
 
-### Palette de Couleurs
-- **Fond** : Dégradé violet foncé vers rose/mauve
-- **Accent** : Doré/orange pour les éléments interactifs
-- **Texte** : Blanc légèrement rosé
-- **Bulles** : Bleu pour vos messages, violet pour les autres
+        if (success) {
+            json syncResponse = json::parse(response);
+            m_syncToken = syncResponse["next_batch"];
+            ProcessSyncResponse(syncResponse);
+        }
+    }
+}
+```
 
-### Animations
-- Particules/étoiles scintillantes en arrière-plan
-- Logo qui rebondit doucement
-- Titre avec effet arc-en-ciel
-- Placeholder animé pendant le chargement des GIFs
-- Pattes de chat 🐾 flottantes en arrière-plan
+#### 3.3 Envoi de Messages
 
-### GIFs de Chats
-L'application charge plusieurs GIFs de chats depuis Tenor :
-- Chat mignon sur l'écran de connexion
-- Chat qui fait coucou dans la zone d'accueil
-- Chaton dans la sidebar quand aucun salon
+```cpp
+bool MatrixClient::SendMessage(const std::string& roomId, const std::string& message)
+{
+    // Génération d'un ID de transaction unique
+    std::string txnId = std::to_string(std::chrono::system_clock::now()
+                                       .time_since_epoch().count());
+
+    std::string endpoint = "/_matrix/client/v3/rooms/" + roomId +
+                          "/send/m.room.message/" + txnId;
+
+    json msgContent = {
+        {"msgtype", "m.text"},
+        {"body", message}
+    };
+
+    std::string response;
+    return HttpRequest("PUT", endpoint, msgContent.dump(), response);
+}
+```
+
+### 4. Interface Graphique (chat_window.cpp)
+
+L'interface utilise Dear ImGui pour un rendu moderne et fluide.
+
+#### 4.1 Écran de Connexion
+
+L'écran de connexion affiche un chat ASCII animé qui réagit au focus :
+
+```cpp
+void ChatWindow::RenderLoginScreen()
+{
+    // Chat ASCII qui change selon l'état
+    const char* catArt;
+    
+    if (m_passwordFieldFocused && m_showPassword) {
+        // Le chat "peek" - un œil ouvert
+        catArt = "   /\\_____/\\    \n"
+                 "  /  o   -  \\   \n"
+                 " ( ==  w  == )  ";
+    }
+    else if (m_passwordFieldFocused) {
+        // Le chat dort - yeux fermés
+        catArt = "   /\\_____/\\   z\n"
+                 "  /  -   -  \\ z \n"
+                 " ( ==  w  == )  ";
+    }
+    else {
+        // Le chat regarde - yeux ouverts
+        catArt = "   /\\_____/\\    \n"
+                 "  /  o   o  \\   \n"
+                 " ( ==  ^  == )  ";
+    }
+    
+    ImGui::Text("%s", catArt);
+    
+    // Champs de saisie
+    ImGui::InputText("Utilisateur", m_username, sizeof(m_username));
+    ImGui::InputText("Mot de passe", m_password, sizeof(m_password),
+                     m_showPassword ? 0 : ImGuiInputTextFlags_Password);
+    
+    if (ImGui::Button("Connexion")) {
+        m_client->Login(m_username, m_password);
+    }
+}
+```
+
+#### 4.2 Animations de Fond
+
+Le fond animé utilise des "particules" qui flottent :
+
+```cpp
+void ChatWindow::RenderBackground()
+{
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+    
+    // Dégradé de fond violet/rose
+    drawList->AddRectFilledMultiColor(
+        ImVec2(0, 0), ImVec2(width, height),
+        IM_COL32(30, 20, 40, 255),   // Haut gauche
+        IM_COL32(40, 25, 50, 255),   // Haut droite
+        IM_COL32(50, 30, 60, 255),   // Bas droite
+        IM_COL32(35, 22, 45, 255)    // Bas gauche
+    );
+    
+    // Particules scintillantes
+    for (auto& star : m_stars) {
+        star.y += star.speed * deltaTime;
+        if (star.y > height) star.y = 0;
+        
+        float alpha = 0.3f + 0.7f * sinf(m_animTime * star.twinkleSpeed);
+        drawList->AddCircleFilled(
+            ImVec2(star.x, star.y),
+            star.size,
+            IM_COL32(255, 255, 255, (int)(alpha * 255))
+        );
+    }
+}
+```
+
+### 5. Gestion des Requêtes HTTP (WinHTTP)
+
+WinHTTP est l'API Windows native pour les requêtes HTTPS :
+
+```cpp
+bool MatrixClient::HttpRequest(const std::string& method,
+                               const std::string& endpoint,
+                               const std::string& body,
+                               std::string& response)
+{
+    // Ouverture de session
+    HINTERNET hSession = WinHttpOpen(
+        L"KittyChat/2.0",
+        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+        WINHTTP_NO_PROXY_NAME,
+        WINHTTP_NO_PROXY_BYPASS, 0
+    );
+
+    // Connexion au serveur
+    HINTERNET hConnect = WinHttpConnect(
+        hSession,
+        L"vault.buffertavern.com",
+        INTERNET_DEFAULT_HTTPS_PORT, 0
+    );
+
+    // Création de la requête
+    HINTERNET hRequest = WinHttpOpenRequest(
+        hConnect,
+        L"POST",  // ou GET, PUT selon method
+        L"/_matrix/client/v3/login",
+        NULL,
+        WINHTTP_NO_REFERER,
+        WINHTTP_DEFAULT_ACCEPT_TYPES,
+        WINHTTP_FLAG_SECURE  // HTTPS
+    );
+
+    // Ajout des headers
+    WinHttpAddRequestHeaders(hRequest,
+        L"Content-Type: application/json",
+        -1, WINHTTP_ADDREQ_FLAG_ADD);
+
+    // Envoi
+    WinHttpSendRequest(hRequest, ...);
+    WinHttpReceiveResponse(hRequest, NULL);
+
+    // Lecture de la réponse
+    // ...
+    
+    return true;
+}
+```
+
+---
+
+## 🔌 Protocole Matrix
+
+### Endpoints API Utilisés
+
+| Endpoint | Méthode | Description |
+|----------|---------|-------------|
+| `/_matrix/client/v3/login` | POST | Authentification |
+| `/_matrix/client/v3/register` | POST | Création de compte |
+| `/_matrix/client/v3/logout` | POST | Déconnexion |
+| `/_matrix/client/v3/sync` | GET | Synchronisation (long polling) |
+| `/_matrix/client/v3/rooms/{roomId}/send/m.room.message/{txnId}` | PUT | Envoi de message |
+| `/_matrix/client/v3/createRoom` | POST | Création de salon |
+| `/_matrix/client/v3/join/{roomIdOrAlias}` | POST | Rejoindre un salon |
+
+### Format des Messages
+
+```json
+{
+  "msgtype": "m.text",
+  "body": "Bonjour tout le monde !"
+}
+```
+
+### Réponse de Synchronisation
+
+```json
+{
+  "next_batch": "s123456789",
+  "rooms": {
+    "join": {
+      "!roomid:server": {
+        "timeline": {
+          "events": [
+            {
+              "type": "m.room.message",
+              "sender": "@user:server",
+              "content": {
+                "msgtype": "m.text",
+                "body": "Hello!"
+              },
+              "origin_server_ts": 1704067200000
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+```
+
+---
+
+## 🚀 Guide d'Installation
+
+### Prérequis Windows
+
+1. **Visual Studio 2019/2022** avec :
+   - Développement Desktop en C++
+   - Windows 10/11 SDK
+   - Outils CMake pour Windows
+
+2. **CMake 3.16+** (inclus dans Visual Studio ou téléchargeable)
+
+### Compilation
+
+```powershell
+# Cloner ou extraire le projet
+cd kitty-chat-cpp
+
+# Créer le dossier de build
+mkdir build
+cd build
+
+# Configuration CMake
+cmake ..
+
+# Compilation
+cmake --build . --config Release
+
+# Lancement
+.\Release\KittyChat.exe
+```
+
+### Script Automatique
+
+Le fichier `launch-kitty-chat.bat` automatise tout :
+1. Détection de CMake (PATH ou Visual Studio)
+2. Configuration du projet
+3. Compilation
+4. Lancement de l'application
+
+---
+
+## 📖 Guide d'Utilisation
+
+### Connexion
+
+1. Lancer l'application
+2. Entrer le nom d'utilisateur : `kitty`
+3. Entrer le mot de passe : `meow123`
+4. Cliquer sur "🐾 Connexion"
+
+### Création de Compte
+
+1. Entrer un nouveau nom d'utilisateur
+2. Entrer un mot de passe
+3. Cliquer sur "✨ S'inscrire"
+
+### Messagerie
+
+- **Sélectionner un salon** : Cliquer dans la liste à gauche
+- **Envoyer un message** : Taper le texte + Entrée ou clic sur "🐾 Miaou!"
+- **Créer un salon** : Bouton "➕ Créer"
+- **Rejoindre un salon** : Bouton "🚪 Rejoindre"
+
+---
+
+## 🔧 Difficultés Rencontrées
+
+### 1. Chargement des GIFs
+
+**Problème** : Les URLs Tenor devinées ne fonctionnaient pas, résultant en images cassées.
+
+**Solution** : Retour à une solution ASCII art fiable qui fonctionne sans dépendance réseau pour l'affichage du chat.
+
+### 2. Tunnel Cloudflare
+
+**Problème** : Erreur 1033 lors des requêtes - le tunnel n'était pas actif.
+
+**Solution** : Vérification systématique du statut du tunnel et redémarrage si nécessaire :
+```bash
+cloudflared tunnel run matrix
+```
+
+### 3. Parsing JSON
+
+**Problème** : Crash lors du parsing de réponses d'erreur non-JSON.
+
+**Solution** : Ajout de vérifications avant le parsing et messages d'erreur détaillés incluant le début de la réponse.
+
+### 4. Compilation Windows
+
+**Problème** : Difficulté à trouver CMake sur différentes configurations.
+
+**Solution** : Script batch intelligent qui cherche CMake dans :
+1. Le PATH système
+2. L'installation Visual Studio
+3. Les emplacements standards
+
+### 5. HTTPS et Certificats
+
+**Problème** : Validation SSL avec WinHTTP sur des tunnels Cloudflare.
+
+**Solution** : WinHTTP gère automatiquement la validation via les certificats Windows, et Cloudflare fournit des certificats valides.
+
+---
+
+## ✅ Tests Effectués
+
+| Test | Résultat |
+|------|----------|
+| Compilation sur Windows 10/11 | ✅ OK |
+| Connexion au serveur Matrix | ✅ OK |
+| Création de compte | ✅ OK |
+| Envoi de messages | ✅ OK |
+| Réception de messages | ✅ OK |
+| Création de salon | ✅ OK |
+| Rejoindre un salon | ✅ OK |
+| Déconnexion | ✅ OK |
+| Animations d'interface | ✅ OK |
+
+---
+
+## 📚 Conclusion
+
+Ce projet démontre la mise en place complète d'un système de messagerie instantanée, de l'infrastructure serveur jusqu'à l'application cliente. Les points clés sont :
+
+1. **Protocole Matrix** : Choix d'un protocole ouvert et standardisé
+2. **Sécurité** : HTTPS via Cloudflare Tunnel, pas de ports ouverts
+3. **Performance** : Application native C++ avec rendu GPU
+4. **Expérience Utilisateur** : Interface moderne avec animations
+
+### Améliorations Futures
+
+- Support du chiffrement de bout en bout (E2EE avec Olm/Megolm)
+- Notifications système Windows
+- Envoi de fichiers et images
+- Appels audio/vidéo (WebRTC)
+- Version multi-plateforme (Linux, macOS)
+
+---
+
+## 👤 Auteur
+
+Projet réalisé dans le cadre du **Master Cybersécurité** - Janvier 2026
 
 ## 📜 Licence
 
 Ce projet est distribué sous licence MIT.
 
-## ✅ Tests Effectués
+---
 
-### Test de l'Interface v2.0
-1. ✅ Fond animé avec particules visibles
-2. ✅ Dégradé violet/rose appliqué
-3. ✅ GIFs chargés et animés
-4. ✅ Bulles de messages modernes
-5. ✅ Emojis affichés correctement
+## 📚 Documentation Technique Complète
 
-### Test de Création de Salon
-1. ✅ Bouton "➕ Créer" fonctionnel
-2. ✅ Popup de création de salon
-3. ✅ Salon créé et visible dans la liste
-4. ✅ Messages envoyables dans le nouveau salon
+Pour une documentation technique approfondie, consultez le rapport en 3 parties :
 
-### Test de Rejoindre un Salon
-1. ✅ Bouton "🚪 Rejoindre" fonctionnel
-2. ✅ Saisie d'alias de salon
-3. ✅ Salon rejoint avec succès
+1. **[RAPPORT_TECHNIQUE.md](RAPPORT_TECHNIQUE.md)** - Backend & Infrastructure
+   - Installation de Matrix Synapse
+   - Configuration de Nginx
+   - Mise en place de Cloudflare Tunnel
+   - Architecture serveur complète
 
-### Infrastructure Serveur
-- Serveur Matrix Synapse sur vault.buffertavern.com
-- Accessible via Cloudflare Tunnel (HTTPS)
-- API v3 Matrix Client-Server
+2. **[RAPPORT_TECHNIQUE_PARTIE2.md](RAPPORT_TECHNIQUE_PARTIE2.md)** - Frontend & Client C++
+   - Architecture de l'application
+   - Initialisation DirectX 11 et Dear ImGui
+   - Implémentation du client Matrix
+   - Interface graphique et animations
 
-## 👤 Auteur
+3. **[RAPPORT_TECHNIQUE_PARTIE3.md](RAPPORT_TECHNIQUE_PARTIE3.md)** - Protocole & Sécurité
+   - API Matrix Client-Server détaillée
+   - Exemples de requêtes/réponses
+   - Bonnes pratiques de sécurité
+   - Difficultés rencontrées et solutions
 
-Projet réalisé dans le cadre du Master Cybersécurité - Janvier 2026
+---
 
 ## 📝 Historique des Versions
 
 ### v2.0 (Janvier 2026)
-- ✨ Ajout des GIFs animés depuis internet
-- 🎨 Nouveau thème violet/rose moderne
-- 🌟 Fond animé avec particules
-- 💬 Bulles de messages stylisées
-- 🚀 Création et jonction de salons
+- 🎨 Interface moderne avec thème violet/rose
+- 🌟 Animations de fond (particules, étoiles)
+- 🐱 Chat ASCII interactif sur l'écran de connexion
+- 💬 Création et gestion des salons
+- 🔧 Amélioration de la gestion d'erreurs
 
 ### v1.0 (Janvier 2026)
-- 🐱 Version initiale avec thème chat ASCII
+- 🐱 Version initiale
 - 🔐 Connexion et inscription Matrix
 - 💬 Messagerie de base

@@ -77,6 +77,17 @@ private:
     float m_animTime;                 // Temps d'animation
     bool m_gifsLoaded;                // GIFs chargés
     
+    // Chat interactif qui suit le curseur
+    float m_catEyeTargetX;            // Position cible des yeux X
+    float m_catEyeTargetY;            // Position cible des yeux Y
+    float m_catEyeCurrentX;           // Position actuelle des yeux X
+    float m_catEyeCurrentY;           // Position actuelle des yeux Y
+    float m_tailCoverAmount;          // Quantité de couverture par la queue (0-1)
+    float m_layDownAmount;            // 0 = assis, 1 = allongé/lové
+    float m_peekAmount;               // 0 = caché, 1 = il peek par-dessus
+    bool m_passwordFieldFocused;      // Le champ password a le focus
+    float m_catBodyRotation;          // Rotation du corps vers le curseur
+    
     // Méthodes de rendu privées
     
     /**
@@ -132,6 +143,19 @@ private:
      * @brief Charge les GIFs depuis internet
      */
     void LoadCatGifs();
+    
+    /**
+     * @brief Dessine le chat interactif qui suit le curseur
+     * @param centerX Position X du centre du chat
+     * @param centerY Position Y du centre du chat
+     * @param size Taille du chat
+     */
+    void RenderInteractiveCat(float centerX, float centerY, float size);
+    
+    /**
+     * @brief Met à jour l'animation du chat
+     */
+    void UpdateCatAnimation();
 };
 
 #endif // CHAT_WINDOW_H
