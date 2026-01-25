@@ -826,25 +826,55 @@ Ce projet est distribué sous licence MIT.
 
 ## 📚 Documentation Technique Complète
 
-Pour une documentation technique approfondie, consultez le rapport en 3 parties :
+### Rapport Technique Principal
+
+**[RAPPORT_TECHNIQUE_COMPLET.md](RAPPORT_TECHNIQUE_COMPLET.md)** - **Documentation exhaustive du projet**
+
+Ce rapport de **plus de 1000 lignes** couvre en détail :
+
+1. **Infrastructure Serveur**
+   - Installation complète de Matrix Synapse
+   - Configuration détaillée de Nginx (reverse proxy)
+   - Mise en place de Cloudflare Tunnel (exposition sécurisée)
+   - Architecture réseau complète avec schémas
+
+2. **Application Cliente**
+   - Architecture de l'application C++
+   - Initialisation DirectX 11 et Dear ImGui
+   - Implémentation complète du client Matrix
+   - Interface graphique et animations
+   - Gestion des textures et GIFs
+
+3. **Sécurité**
+   - Chiffrement HTTPS/TLS
+   - Gestion des tokens d'accès
+   - Protection du serveur (Cloudflare, Nginx)
+   - Bonnes pratiques de sécurité
+
+4. **Protocole Matrix**
+   - API Client-Server v3 détaillée
+   - Exemples de requêtes/réponses
+   - Long polling et synchronisation temps réel
+   - Format des identifiants Matrix
+
+5. **Détails d'Implémentation**
+   - Gestion des threads
+   - Gestion de la mémoire
+   - Gestion des erreurs
+   - Tests et validation
+
+6. **Difficultés et Solutions**
+   - Problèmes rencontrés
+   - Solutions apportées
+   - Apprentissages
+
+### Rapports Techniques par Partie
+
+Pour une lecture par sections :
 
 1. **[RAPPORT_TECHNIQUE.md](RAPPORT_TECHNIQUE.md)** - Backend & Infrastructure
-   - Installation de Matrix Synapse
-   - Configuration de Nginx
-   - Mise en place de Cloudflare Tunnel
-   - Architecture serveur complète
-
 2. **[RAPPORT_TECHNIQUE_PARTIE2.md](RAPPORT_TECHNIQUE_PARTIE2.md)** - Frontend & Client C++
-   - Architecture de l'application
-   - Initialisation DirectX 11 et Dear ImGui
-   - Implémentation du client Matrix
-   - Interface graphique et animations
-
 3. **[RAPPORT_TECHNIQUE_PARTIE3.md](RAPPORT_TECHNIQUE_PARTIE3.md)** - Protocole & Sécurité
-   - API Matrix Client-Server détaillée
-   - Exemples de requêtes/réponses
-   - Bonnes pratiques de sécurité
-   - Difficultés rencontrées et solutions
 
 ---
 
