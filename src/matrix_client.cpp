@@ -164,6 +164,13 @@ bool MatrixClient::Register(const std::string& username, const std::string& pass
     bool success = HttpRequest("POST", "/_matrix/client/v3/register", 
                                registerRequest.dump(), response);
 
+    // Vérifier que la requête a au moins retourné quelque chose
+    if (response.empty())
+    {
+        m_lastError = "Pas de reponse du serveur";
+        return false;
+    }
+
     try
     {
         json registerResponse = json::parse(response);
@@ -229,7 +236,9 @@ bool MatrixClient::Register(const std::string& username, const std::string& pass
     }
     catch (const json::exception& e)
     {
-        m_lastError = std::string("Erreur de parsing JSON: ") + e.what();
+        // Afficher les premiers caractères de la réponse pour debug
+        std::string preview = response.substr(0, 100);
+        m_lastError = std::string("Erreur JSON: ") + e.what() + " - Reponse: " + preview;
         return false;
     }
 }
@@ -490,8 +499,23 @@ void MatrixClient::StopSync()
 /**
  * @brief Boucle de synchronisation exécutée dans un thread séparé
  * 
- * Cette boucle appelle régulièrement l'API /sync pour récupérer
- * les nouveaux événements (messages, changements de salon, etc.)
+ * Cette fonction implémente le "long polling" pour la synchronisation temps réel.
+ * 
+ * Principe du long polling :
+ * 1. Le client envoie une requête GET /sync avec timeout=30000 (30 secondes)
+ * 2. Le serveur attend jusqu'à 30 secondes pour de nouveaux événements
+ * 3. Si un événement arrive → réponse immédiate avec les données
+ * 4. Sinon → réponse vide après 30s
+ * 5. Le client relance immédiatement une nouvelle requête
+ * 
+ * Avantages :
+ * - Efficace : Pas de polling constant (économise la bande passante)
+ * - Temps réel : Réception immédiate des messages
+ * - Scalable : Le serveur peut gérer beaucoup de connexions simultanées
+ * 
+ * Le token de synchronisation (m_syncToken) permet la synchronisation incrémentale :
+ * - Première requête : sans token → récupère l'état initial
+ * - Requêtes suivantes : avec token → récupère uniquement les nouveaux événements
  */
 void MatrixClient::SyncLoop()
 {
@@ -659,8 +683,20 @@ void MatrixClient::ProcessSyncResponse(const std::string& syncResponse)
 /**
  * @brief Effectue une requête HTTP vers l'API Matrix
  * 
- * Utilise WinHTTP pour les connexions HTTP/HTTPS
- * Supporte les URLs http:// et https://
+ * Cette fonction utilise WinHTTP (API Windows native) pour effectuer des requêtes HTTPS
+ * vers le serveur Matrix. WinHTTP gère automatiquement :
+ * - La validation des certificats SSL via le magasin Windows
+ * - La négociation TLS (TLS 1.2+)
+ * - La gestion des proxies système
+ * 
+ * Sécurité : Toutes les communications sont chiffrées via HTTPS (TLS).
+ * Le token d'accès est inclus dans le header Authorization si disponible.
+ * 
+ * @param method Méthode HTTP (GET, POST, PUT)
+ * @param endpoint Point de terminaison de l'API (ex: /_matrix/client/v3/login)
+ * @param body Corps de la requête (JSON pour POST/PUT)
+ * @param response Réponse reçue du serveur (JSON)
+ * @return true si la requête a réussi (code HTTP 2xx)
  */
 bool MatrixClient::HttpRequest(const std::string& method, const std::string& endpoint,
                                const std::string& body, std::string& response)

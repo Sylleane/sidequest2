@@ -31,7 +31,7 @@ static ID3D11Device*            g_pd3dDevice = nullptr;
 static ID3D11DeviceContext*     g_pd3dDeviceContext = nullptr;
 static IDXGISwapChain*          g_pSwapChain = nullptr;
 static ID3D11RenderTargetView*  g_mainRenderTargetView = nullptr;
-
+    
 // Prototypes des fonctions
 bool CreateDeviceD3D(HWND hWnd);
 void CleanupDeviceD3D();
@@ -218,7 +218,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 /**
  * @brief Crée le device DirectX11 et la swap chain
- * @param hWnd Handle de la fenêtre
+ * 
+ * Cette fonction initialise DirectX 11 pour le rendu GPU :
+ * - Crée le device DirectX 11 (interface avec le GPU)
+ * - Crée la swap chain (double buffering pour éviter le flickering)
+ * - Configure le format de rendu (RGBA 32 bits)
+ * - Active le VSync (limite à 60 FPS)
+ * 
+ * Sécurité : Si le GPU n'est pas supporté, fallback sur le driver logiciel WARP
+ * (Windows Advanced Rasterization Platform) pour garantir la compatibilité.
+ * 
+ * @param hWnd Handle de la fenêtre Windows
  * @return true si succès, false sinon
  */
 bool CreateDeviceD3D(HWND hWnd)
@@ -314,8 +324,8 @@ void CreateRenderTarget()
 void CleanupRenderTarget()
 {
     if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = nullptr; }
-}
-
+    }
+    
 /**
  * @brief Gestionnaire de messages Windows
  * 
