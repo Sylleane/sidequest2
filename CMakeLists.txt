@@ -97,8 +97,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     crypt32     # Cryptographie Windows
 )
 
-# Copie des assets dans le dossier de build
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
+# Copie des assets dans le dossier de build (si le dossier existe)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+    file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_BINARY_DIR})
+else()
+    # Créer le dossier assets vide si il n'existe pas
+    file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/assets)
+    message(STATUS "Dossier assets créé (vide)")
+endif()
 
 # Message d'information
 message(STATUS "Configuration de Kitty Chat C++ terminée")
