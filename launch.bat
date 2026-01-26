@@ -64,6 +64,13 @@ if exist "build\Debug\KittyChat.exe" (
     goto :launch_debug
 )
 
+REM Creation du dossier assets si necessaire
+if not exist "assets" (
+    echo [INFO] Creation du dossier assets...
+    mkdir assets
+    echo. > assets\.gitkeep
+)
+
 REM Creation du dossier de build si necessaire
 if not exist "build" (
     echo [INFO] Creation du dossier de build...
