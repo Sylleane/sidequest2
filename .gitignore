@@ -1,0 +1,21 @@
+# Build output
+build/
+out/
+cmake-build-*/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Compiled files
+*.exe
+*.dll
+*.lib
+*.obj
+*.pdb
+
+# OS files
+.DS_Store
+Thumbs.db
