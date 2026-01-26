@@ -4,8 +4,7 @@
  * 
  * Gère le téléchargement de GIFs depuis internet et leur animation.
  * 
- * Auteur: Étudiant en Master Cybersécurité
- * Date: Janvier 2026
+ * Auteurs: Enzo Dupuy, Eric Deswarte, Mathis abbadie 
  */
 
 #include <windows.h>

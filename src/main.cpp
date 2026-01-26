@@ -5,8 +5,7 @@
  * Ce fichier contient la boucle principale de l'application et initialise
  * l'interface graphique Dear ImGui avec le backend Win32/DirectX11.
  * 
- * Auteur: Étudiant en Master Cybersécurité
- * Date: Janvier 2026
+ * Auteurs: Enzo Dupuy, Eric Deswarte, Mathis abbadie 
  */
 
 #include <windows.h>

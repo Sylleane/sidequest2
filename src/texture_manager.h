@@ -5,8 +5,7 @@
  * Ce fichier gère le téléchargement, le décodage et l'animation
  * de GIFs de chats depuis internet.
  * 
- * Auteur: Étudiant en Master Cybersécurité
- * Date: Janvier 2026
+ * Auteurs: Enzo Dupuy, Eric Deswarte, Mathis abbadie 
  */
 
 #ifndef TEXTURE_MANAGER_H

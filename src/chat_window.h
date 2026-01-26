@@ -5,8 +5,7 @@
  * Ce fichier définit la classe ChatWindow qui gère l'interface utilisateur
  * du client de chat : écran de connexion, liste des salons, zone de messages.
  * 
- * Auteur: Étudiant en Master Cybersécurité
- * Date: Janvier 2026
+ * Auteurs: Enzo Dupuy, Eric Deswarte, Mathis abbadie 
  */
 
 #ifndef CHAT_WINDOW_H

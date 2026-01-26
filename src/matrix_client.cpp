@@ -5,8 +5,7 @@
  * Ce fichier contient l'implémentation des méthodes de la classe MatrixClient.
  * Il utilise WinHTTP pour les requêtes HTTPS vers le serveur Matrix.
  * 
- * Auteur: Étudiant en Master Cybersécurité
- * Date: Janvier 2026
+ * Auteurs: Enzo Dupuy, Eric Deswarte, Mathis abbadie 
  */
 
 #include <windows.h>

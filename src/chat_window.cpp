@@ -5,8 +5,7 @@
  * Interface utilisateur magnifique avec animations, GIFs de chats,
  * et effets visuels modernes.
  * 
- * Auteur: Étudiant en Master Cybersécurité
- * Date: Janvier 2026
+ * Auteurs: Enzo Dupuy, Eric Deswarte, Mathis abbadie 
  */
 
 #include <windows.h>

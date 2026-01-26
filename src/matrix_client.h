@@ -5,8 +5,7 @@
  * Ce fichier définit la classe MatrixClient qui gère toutes les interactions
  * avec le protocole Matrix : authentification, synchronisation, envoi de messages.
  * 
- * Auteur: Étudiant en Master Cybersécurité
- * Date: Janvier 2026
+ * Auteurs: Enzo Dupuy, Eric Deswarte, Mathis abbadie 
  */
 
 #ifndef MATRIX_CLIENT_H
