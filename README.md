@@ -1,26 +1,47 @@
-# 🐱 Kitty Chat C++ - Application de Messagerie Matrix
-
-**Projet réalisé dans le cadre du Master Cybersécurité - Janvier 2026**
+# Kitty Chat C++ - Application de Messagerie Matrix
 
 Client de messagerie instantanée basé sur le protocole Matrix, développé en C++ avec une interface graphique moderne utilisant Dear ImGui et DirectX 11.
 
 ---
 
-## 📋 Table des Matières
+## Table des Matières
 
-1. [Présentation du Projet](#présentation-du-projet)
-2. [Architecture Globale](#architecture-globale)
-3. [Infrastructure Serveur](#infrastructure-serveur)
-4. [Application Cliente](#application-cliente)
-5. [Protocole Matrix](#protocole-matrix)
-6. [Guide d'Installation](#guide-dinstallation)
-7. [Guide d'Utilisation](#guide-dutilisation)
-8. [Difficultés Rencontrées](#difficultés-rencontrées)
-9. [Conclusion](#conclusion)
+1. [Structure du dépôt](#structure-du-dépôt)
+2. [Présentation du Projet](#présentation-du-projet)
+3. [Architecture Globale](#architecture-globale)
+4. [Infrastructure Serveur](#infrastructure-serveur)
+5. [Application Cliente](#application-cliente)
+6. [Protocole Matrix](#protocole-matrix)
+7. [Guide d'Installation](#guide-dinstallation)
+8. [Guide d'Utilisation](#guide-dutilisation)
+9. [Difficultés Rencontrées](#difficultés-rencontrées)
+10. [Conclusion](#conclusion)
 
 ---
 
-## 📖 Présentation du Projet
+## Structure du dépôt
+
+```
+.
+├── README.md              # Ce fichier (Documentation d'accueil)
+├── CMakeLists.txt         # Configuration du build
+├── launch.bat             # Raccourci vers cicd/launch.bat
+├── src/                   # CODE SOURCE : C++, ImGui, client Matrix
+├── assets/                # Ressources (fonts, icons)
+├── cicd/                  # CI/CD : Scripts de build et déploiement
+│   ├── launch.bat         # Compilation + lancement de l'application
+│   └── check-tunnel.sh    # Vérification du tunnel Cloudflare (serveur)
+├── documentation/         # DOCUMENTATION : Rapports techniques, guides
+│   ├── RAPPORT_TECHNIQUE_COMPLET.md
+
+├── presentation/          # PRÉSENTATION : Supports pour la soutenance
+│   ├── KittyChat_Presentation.pptx
+
+```
+
+---
+
+## Présentation du Projet
 
 ### Objectif
 
@@ -50,7 +71,7 @@ Matrix est un protocole de communication décentralisé et open-source qui offre
 
 ---
 
-## 🏗️ Architecture Globale
+## Architecture Globale
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -102,7 +123,7 @@ Matrix est un protocole de communication décentralisé et open-source qui offre
 
 ---
 
-## 🖥️ Infrastructure Serveur
+## Infrastructure Serveur
 
 ### 1. Installation de Matrix Synapse
 
@@ -313,36 +334,23 @@ sudo systemctl start cloudflared
 
 ---
 
-## 💻 Application Cliente
+## Application Cliente
 
-### 1. Structure du Projet
+### 1. Structure du code (src/)
 
 ```
-kitty-chat-cpp/
-├── CMakeLists.txt           # Configuration CMake
-├── README.md                # Documentation
-├── launch.bat               # Script de lancement Windows
-│
-├── src/
-│   ├── main.cpp             # Point d'entrée + Init DirectX/ImGui
-│   ├── matrix_client.h      # Déclaration du client Matrix
-│   ├── matrix_client.cpp    # Implémentation API Matrix
-│   ├── chat_window.h        # Déclaration interface utilisateur
-│   ├── chat_window.cpp      # Interface graphique + animations
-│   ├── texture_manager.h    # Gestion des textures
-│   ├── texture_manager.cpp  # Chargement d'images/GIFs
-│   └── stb_image.h          # Décodeur d'images (header-only)
-│
-├── assets/                  # Ressources graphiques
-│
-└── build/                   # Dossier de compilation (généré)
-    ├── Release/
-    │   └── KittyChat.exe    # Exécutable final
-    └── _deps/               # Dépendances téléchargées
-        ├── imgui-src/       # Dear ImGui
-        ├── json-src/        # nlohmann/json
-        └── httplib-src/     # cpp-httplib
+src/
+├── main.cpp             # Point d'entrée + Init DirectX/ImGui
+├── matrix_client.h      # Déclaration du client Matrix
+├── matrix_client.cpp    # Implémentation API Matrix
+├── chat_window.h        # Déclaration interface utilisateur
+├── chat_window.cpp      # Interface graphique + animations
+├── texture_manager.h    # Gestion des textures
+├── texture_manager.cpp  # Chargement d'images/GIFs
+└── stb_image.h          # Décodeur d'images (header-only)
 ```
+
+Le dossier `build/` (généré) contient `Release/KittyChat.exe` et `_deps/` (Dear ImGui, nlohmann/json).
 
 ### 2. Système de Build (CMake)
 
@@ -622,7 +630,7 @@ bool MatrixClient::HttpRequest(const std::string& method,
 
 ---
 
-## 🔌 Protocole Matrix
+## Protocole Matrix
 
 ### Endpoints API Utilisés
 
@@ -705,9 +713,9 @@ cmake --build . --config Release
 .\Release\KittyChat.exe
 ```
 
-### Script Automatique
+### Script automatique
 
-Le fichier `launch-kitty-chat.bat` automatise tout :
+Lancer **`launch.bat`** (à la racine) ou **`cicd/launch.bat`** :
 1. Détection de CMake (PATH ou Visual Studio)
 2. Configuration du projet
 3. Compilation
@@ -715,31 +723,31 @@ Le fichier `launch-kitty-chat.bat` automatise tout :
 
 ---
 
-## 📖 Guide d'Utilisation
+## Guide d'Utilisation
 
 ### Connexion
 
 1. Lancer l'application
 2. Entrer le nom d'utilisateur : `kitty`
 3. Entrer le mot de passe : `meow123`
-4. Cliquer sur "🐾 Connexion"
+4. Cliquer sur "Connexion"
 
 ### Création de Compte
 
 1. Entrer un nouveau nom d'utilisateur
 2. Entrer un mot de passe
-3. Cliquer sur "✨ S'inscrire"
+3. Cliquer sur "S'inscrire"
 
 ### Messagerie
 
 - **Sélectionner un salon** : Cliquer dans la liste à gauche
-- **Envoyer un message** : Taper le texte + Entrée ou clic sur "🐾 Miaou!"
-- **Créer un salon** : Bouton "➕ Créer"
-- **Rejoindre un salon** : Bouton "🚪 Rejoindre"
+- **Envoyer un message** : Taper le texte + Entrée ou clic sur "Miaou!"
+- **Créer un salon** : Bouton "Créer"
+- **Rejoindre un salon** : Bouton "Rejoindre"
 
 ---
 
-## 🔧 Difficultés Rencontrées
+## Difficultés Rencontrées
 
 ### 1. Chargement des GIFs
 
@@ -779,23 +787,23 @@ cloudflared tunnel run matrix
 
 ---
 
-## ✅ Tests Effectués
+## Tests Effectués
 
 | Test | Résultat |
 |------|----------|
-| Compilation sur Windows 10/11 | ✅ OK |
-| Connexion au serveur Matrix | ✅ OK |
-| Création de compte | ✅ OK |
-| Envoi de messages | ✅ OK |
-| Réception de messages | ✅ OK |
-| Création de salon | ✅ OK |
-| Rejoindre un salon | ✅ OK |
-| Déconnexion | ✅ OK |
-| Animations d'interface | ✅ OK |
+| Compilation sur Windows 10/11 | OK |
+| Connexion au serveur Matrix | OK |
+| Création de compte | OK |
+| Envoi de messages | OK |
+| Réception de messages | OK |
+| Création de salon | OK |
+| Rejoindre un salon | OK |
+| Déconnexion | OK |
+| Animations d'interface | OK |
 
 ---
 
-## 📚 Conclusion
+## Conclusion
 
 Ce projet démontre la mise en place complète d'un système de messagerie instantanée, de l'infrastructure serveur jusqu'à l'application cliente. Les points clés sont :
 
@@ -814,23 +822,19 @@ Ce projet démontre la mise en place complète d'un système de messagerie insta
 
 ---
 
-## 👤 Auteur
-
-Projet réalisé dans le cadre du **Master Cybersécurité** - Janvier 2026
-
-## 📜 Licence
+## Licence
 
 Ce projet est distribué sous licence MIT.
 
 ---
 
-## 📚 Documentation Technique Complète
+## Documentation Technique Complète
 
 ### Rapport Technique Principal
 
-**[RAPPORT_TECHNIQUE_COMPLET.md](RAPPORT_TECHNIQUE_COMPLET.md)** - **Documentation exhaustive du projet**
+**[documentation/RAPPORT_TECHNIQUE_COMPLET.md](documentation/RAPPORT_TECHNIQUE_COMPLET.md)** - **Documentation détaillée du projet**
 
-Ce rapport de **plus de 1000 lignes** couvre en détail :
+Ce rapport couvre en détail :
 
 1. **Infrastructure Serveur**
    - Installation complète de Matrix Synapse
@@ -872,22 +876,22 @@ Ce rapport de **plus de 1000 lignes** couvre en détail :
 
 Pour une lecture par sections :
 
-1. **[RAPPORT_TECHNIQUE.md](RAPPORT_TECHNIQUE.md)** - Backend & Infrastructure
-2. **[RAPPORT_TECHNIQUE_PARTIE2.md](RAPPORT_TECHNIQUE_PARTIE2.md)** - Frontend & Client C++
-3. **[RAPPORT_TECHNIQUE_PARTIE3.md](RAPPORT_TECHNIQUE_PARTIE3.md)** - Protocole & Sécurité
+1. **[documentation/RAPPORT_TECHNIQUE.md](documentation/RAPPORT_TECHNIQUE.md)** - Backend & Infrastructure
+2. **[documentation/RAPPORT_TECHNIQUE_PARTIE2.md](documentation/RAPPORT_TECHNIQUE_PARTIE2.md)** - Frontend & Client C++
+3. **[documentation/RAPPORT_TECHNIQUE_PARTIE3.md](documentation/RAPPORT_TECHNIQUE_PARTIE3.md)** - Protocole & Sécurité
 
 ---
 
-## 📝 Historique des Versions
+## Historique des Versions
 
-### v2.0 (Janvier 2026)
-- 🎨 Interface moderne avec thème violet/rose
-- 🌟 Animations de fond (particules, étoiles)
-- 🐱 Chat ASCII interactif sur l'écran de connexion
-- 💬 Création et gestion des salons
-- 🔧 Amélioration de la gestion d'erreurs
+### v2.0
+- Interface moderne avec thème violet/rose
+- Animations de fond (particules, étoiles)
+- Chat ASCII interactif sur l'écran de connexion
+- Création et gestion des salons
+- Amélioration de la gestion d'erreurs
 
-### v1.0 (Janvier 2026)
-- 🐱 Version initiale
-- 🔐 Connexion et inscription Matrix
-- 💬 Messagerie de base
+### v1.0
+- Version initiale
+- Connexion et inscription Matrix
+- Messagerie de base

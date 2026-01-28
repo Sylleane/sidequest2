@@ -3,9 +3,6 @@
  * @brief Implémentation du gestionnaire de textures
  * 
  * Gère le téléchargement de GIFs depuis internet et leur animation.
- * 
- * Auteur: Étudiant en Master Cybersécurité
- * Date: Janvier 2026
  */
 
 #include <windows.h>

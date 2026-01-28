@@ -1,10 +1,10 @@
-# 📚 Rapport Technique Complet - Kitty Chat C++
+# Rapport Technique Complet - Kitty Chat C++
 
-**Projet réalisé dans le cadre du Master Cybersécurité - Janvier 2026**
+**Projet Master Cybersécurité**
 
 ---
 
-## 📋 Table des Matières
+## Table des Matières
 
 1. [Introduction](#introduction)
 2. [Architecture Globale](#architecture-globale)
@@ -79,7 +79,7 @@ Matrix est un protocole de communication décentralisé et open-source qui offre
     │   (CDN + DDoS Protection)│                                          
     │                          │                                          
     │   vault.buffertavern.com │                                          
-    │   Certificat SSL         │                                          
+    │   Certificat SSL          │                                          
     └────────────┬─────────────┘                                          
                  │                                                         
                  │ Cloudflare Tunnel                                       
@@ -87,10 +87,10 @@ Matrix est un protocole de communication décentralisé et open-source qui offre
                  │                                                         
                  ▼                                                         
     ┌──────────────────────────┐                                          
-    │   Serveur Linux          │                                          
-    │   (Debian/Ubuntu)        │                                          
-    │   IP: 192.168.1.17       │                                          
-    │                          │                                          
+    │   Serveur Linux           │                                          
+    │   (Debian/Ubuntu)         │                                          
+    │   IP: 192.168.1.17        │                                          
+    │                           │                                          
     │   ┌──────────────────┐   │                                          
     │   │   cloudflared    │   │                                          
     │   │   (Tunnel Agent) │   │                                          
@@ -1319,24 +1319,24 @@ if (!hSession)
 
 | Test | Résultat | Notes |
 |------|----------|-------|
-| Compilation Windows 10/11 | ✅ OK | Visual Studio 2022 |
-| Connexion au serveur | ✅ OK | HTTPS via Cloudflare |
-| Création de compte | ✅ OK | Inscription publique activée |
-| Envoi de messages | ✅ OK | Format m.text |
-| Réception de messages | ✅ OK | Synchronisation temps réel |
-| Création de salon | ✅ OK | API createRoom |
-| Rejoindre un salon | ✅ OK | Par ID ou alias |
-| Déconnexion | ✅ OK | Nettoyage des ressources |
-| Animations d'interface | ✅ OK | 60 FPS stable |
+| Compilation Windows 10/11 | OK | Visual Studio 2022 |
+| Connexion au serveur | OK | HTTPS via Cloudflare |
+| Création de compte | OK | Inscription publique activée |
+| Envoi de messages | OK | Format m.text |
+| Réception de messages | OK | Synchronisation temps réel |
+| Création de salon | OK | API createRoom |
+| Rejoindre un salon | OK | Par ID ou alias |
+| Déconnexion | OK | Nettoyage des ressources |
+| Animations d'interface | OK | 60 FPS stable |
 
 ### 8.2 Tests de Sécurité
 
 | Test | Résultat | Notes |
 |------|----------|-------|
-| HTTPS/TLS | ✅ OK | Certificats Cloudflare valides |
-| Validation des tokens | ✅ OK | Serveur rejette les tokens invalides |
-| Rate limiting | ✅ OK | Configuré dans Synapse |
-| Protection DDoS | ✅ OK | Cloudflare active |
+| HTTPS/TLS | OK | Certificats Cloudflare valides |
+| Validation des tokens | OK | Serveur rejette les tokens invalides |
+| Rate limiting | OK | Configuré dans Synapse |
+| Protection DDoS | OK | Cloudflare active |
 
 ### 8.3 Tests de Performance
 
@@ -1388,11 +1388,11 @@ if (!hSession)
 
 ### 10.1 Objectifs Atteints
 
-✅ **Infrastructure serveur complète** : Synapse + Nginx + Cloudflare Tunnel  
-✅ **Client natif C++** : Application Windows avec interface moderne  
-✅ **Sécurité** : HTTPS, tokens, protection DDoS  
-✅ **Protocole Matrix** : Implémentation complète de l'API Client-Server v3  
-✅ **Expérience utilisateur** : Interface moderne avec animations
+- **Infrastructure serveur complète** : Synapse + Nginx + Cloudflare Tunnel
+- **Client natif C++** : Application Windows avec interface moderne
+- **Sécurité** : HTTPS, tokens, protection DDoS
+- **Protocole Matrix** : Implémentation complète de l'API Client-Server v3
+- **Expérience utilisateur** : Interface moderne avec animations
 
 ### 10.2 Points Forts
 
@@ -1419,7 +1419,3 @@ Ce projet a permis de maîtriser :
 3. **Développement natif** : C++, DirectX 11, Win32 API
 4. **Protocoles** : Matrix Client-Server API, long polling
 5. **Outils** : CMake, Git, Visual Studio
-
----
-
-**Projet réalisé dans le cadre du Master Cybersécurité - Janvier 2026**

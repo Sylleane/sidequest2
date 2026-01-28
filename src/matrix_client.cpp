@@ -4,9 +4,6 @@
  * 
  * Ce fichier contient l'implémentation des méthodes de la classe MatrixClient.
  * Il utilise WinHTTP pour les requêtes HTTPS vers le serveur Matrix.
- * 
- * Auteur: Étudiant en Master Cybersécurité
- * Date: Janvier 2026
  */
 
 #include <windows.h>
@@ -139,7 +136,7 @@ bool MatrixClient::Login(const std::string& username, const std::string& passwor
  * @brief Crée un nouveau compte sur le serveur Matrix
  * 
  * Cette méthode utilise l'API /_matrix/client/v3/register pour créer un compte.
- * Note: L'inscription peut nécessiter des étapes supplémentaires (captcha, email)
+ * L'inscription peut nécessiter des étapes supplémentaires (captcha, email)
  * selon la configuration du serveur.
  */
 bool MatrixClient::Register(const std::string& username, const std::string& password)
